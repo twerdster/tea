@@ -1,2 +1,35 @@
-# tea
-GPU based training of randomized decision trees on tera-byte sized datasets
+# Tea
+
+Tea is a randomized decision tree learning framework designed for fast learning on massive tera-byte sized datasets.
+It can handle up to 2B examples with thousands of features and up to 256 separate classes.
+
+It is the first such framework which can take advantage of multiple GPUs on a single computing node to perform highly parallel decision tree
+training. 
+
+## Reading Tea leaves
+
+The default output of Tea is an unpruned randomized decision tree with its leaves containing the apriori class distribution of a given
+input example. Performing inference using Tea is incredibly fast and we provide a number of different implementations for different
+platforms using CPU, GPU and FPGA.   
+
+## Tea bagging
+
+Tea can perform bagging efficiently during training.   
+By combining the leaves from different trees it is possible 
+
+## Whats in a name?
+
+Tea takes its name from the ancient beverage: tea. The beverage has a long and interesting history
+and is ultimately created by a collection of leaves which can, when properly brewed, infuse a liquid with an
+almost infinite variety of different tastes. 
+
+## Core elements
+
+The underlying training algorithm is loosely based on ID3 and includes a number of novel modifications
+to enable mapping of the training process to multiple processing units and back again while minimizing and hiding 
+data transmission overhead.
+It has been developed by Aaron Wetzler as part of his PhD thesis in the GIP lab at the Technion Israel Institute of Technology.
+
+
+## TODO:
+a lot ...
