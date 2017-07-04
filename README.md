@@ -6,6 +6,11 @@ It can handle up to 2B examples with thousands of features and up to 256 separat
 It is the first such framework which can take advantage of multiple GPUs on a single computing node to perform highly parallel decision tree
 training. 
 
+## Making Tea
+
+This has currently only been tested on Ubuntu 14.04. You will need Boost version >= 1.54 and Cuda version >= 7.5.
+Run `make Tea` to make Tea. You can then run `./Tea` to see current options.
+
 ## Reading Tea leaves
 
 The default output of Tea is an unpruned randomized decision tree with its leaves containing the apriori class distribution of a given
@@ -33,3 +38,12 @@ It has been developed by Aaron Wetzler as part of his PhD thesis in the GIP lab 
 
 ## TODO:
 a lot ...
+* CMake
+* Python and Matlab interfaces
+* Pruning and other utilities
+* Refactoring
+* Examples
+* Better logging
+
+
+
