@@ -15,6 +15,7 @@
 #include "Clock.h"
 #include <omp.h>
 #include "log.h"
+#include "errors.h"
 
 boost::mutex broadcastMutex;
 boost::condition_variable broadcastConditionVar;
@@ -423,8 +424,8 @@ int runBuilder()
 	err = cudaHostAlloc(&revIndexList, numSamples*sizeof(uint),cudaHostAllocPortable);	
 
     if (err!=cudaSuccess)
-    	FILE_LOG(LOG0) << "Error allocating memory: .\n\n\n";
-    
+    	FILE_LOG(LOG0) << "Error allocating memory: " << errCESTRing(err) << ".\n\n\n";
+
 	for (int idx = 0; idx < numSamples; idx++)
 	{
 		fwdIndexList[idx] = idx;

@@ -1,3 +1,6 @@
+#ifndef _CUDA_ERRORS
+#define _CUDA_ERRORS
+
 #include "kernels.h"
 #include <cuda.h>
 //#include <cuda_runtime.h>
@@ -74,3 +77,4 @@ const char * errCESTRing(int errCode)
 	}
 }
 
+#endif //_CUDA_ERRORS

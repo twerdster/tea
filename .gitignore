@@ -1,3 +1,4 @@
 Tea
 *.o
 build/
+data/
