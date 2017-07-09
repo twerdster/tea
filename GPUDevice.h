@@ -55,17 +55,30 @@ public:
 		setCurrent();
 		size_t free,total;
 		cudaMemGetInfo(&free,&total);
-		cudaMalloc( (void **)&_partialHistograms, MAX_PARTIAL_HISTOGRAM64_COUNT * HISTOGRAM64_BIN_COUNT * sizeof(uint)) ;
-		cudaMalloc( &_histograms, _histBytes); // foldingDepth defines how many histograms we create.  
-		cudaMalloc( &_nodes, 2*maxNodes*sizeof(RFTrainNode)); //In this case we take the total number of nodes that will be calculated for this whole tree which is maxNodes + 0.5*maxNodes + 0.25* ... = 2*maxNodes
-		cudaMalloc( &_samples, numSamples*sizeof(Sample));
-		cudaMalloc( &_apriori, numClasses*sizeof(uint));
+		size_t partialMem = MAX_PARTIAL_HISTOGRAM64_COUNT * HISTOGRAM64_BIN_COUNT * sizeof(uint);
+		size_t histMem = _histBytes;
+		size_t nodeMem = 2*maxNodes*sizeof(RFTrainNode);
+		size_t sampleMem = numSamples*sizeof(Sample);
+		size_t classesMem = numClasses*sizeof(uint);
+		
+		FILE_LOG(LOG1) << "Allocating on GPU ("<< _deviceId << "):";
+		FILE_LOG(LOG1) << "     partialMem: " << partialMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     histMem: " << histMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     nodeMem: " << nodeMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     sampleMem: " << sampleMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     classesMem: " << classesMem/1024 << "kb";
+		
+		cudaMalloc( (void **)&_partialHistograms, partialMem) ;
+		cudaMalloc( &_histograms, histMem); // foldingDepth defines how many histograms we create.  
+		cudaMalloc( &_nodes, nodeMem); //In this case we take the total number of nodes that will be calculated for this whole tree which is maxNodes + 0.5*maxNodes + 0.25* ... = 2*maxNodes
+		cudaMalloc( &_samples, sampleMem);
+		cudaMalloc( &_apriori, classesMem);
 
 		cudaError ce = cudaGetLastError();
 		cudaDeviceProp deviceProps;
 		cudaGetDeviceProperties(&deviceProps, _deviceId);
 		if (ce == cudaSuccess)
-			FILE_LOG(LOG0) << "Added CUDA device [" << deviceProps.name << "]";
+			FILE_LOG(LOG0) << "Succesfully added CUDA device [" << deviceProps.name << "]";
 		else
 		{
 			FILE_LOG(logERROR) << "Found CUDA device [" << deviceProps.name << "] but could not add it";

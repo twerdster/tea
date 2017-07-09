@@ -536,7 +536,7 @@ int runBuilder()
 		//saveCurrentTree(); including coords, nodes and extracted histograms from samples;
 
 		generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
-		generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
+		//generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
 		
 		FILE_LOG(LOG0) << "Processed " << n << " tasks in " << std::fixed << clk.toc() << "s\n\n";
 	}
