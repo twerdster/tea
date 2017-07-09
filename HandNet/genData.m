@@ -1,34 +1,44 @@
 
 function genTempData(dataDir, outDir, nFeatures, probeSize, featurePrecision, maxFilesOpen, rseed)
 %Eg usage: genTempData('/home/gipadmin/Downloads/TestData/','/home/gipadmin/forks/tea/data/',200,50,'int8',200,0)
-
+isO = exist('OCTAVE_VERSION', 'builtin') ~= 0;
 warning off;
+more off;
 fclose all;
 
 % Harcoded:
 maxLabel = 7;
 maxDiff = 250; %25cm
 
-dirInfo=dir([dataDir '/Data_*.mat'])
+dirInfo=dir([dataDir '/Data_*.mat']);
+fprintf('Found %i files\nScanning...\n',length(dirInfo));
 nImages = length(dirInfo);
 totSamples = 0;
 
 if nImages == 0
-   dataDir
-   error('No images available');
-   return;
+    dataDir
+    error('No images available');
+    return;
 end
-h = waitbar(0,'Calculating total number of samples ...');
+%h = waitbar(0,'Calculating total number of samples ...');
 
 for i=1:nImages
     load([dataDir dirInfo(i).name]);
     %depth = Depth;
     totSamples = totSamples + sum(lbl(:)>=1);
-    waitbar(i/nImages,h);
+    if mod(i,1000)==0
+        fprintf('Scanned %i / %i images\n',i,nImages);
+        if isO
+            fflush(stdout);
+        else
+            drawnow;
+        end
+    end
+    %waitbar(i/nImages,h);
 end
 
 fprintf('TotalSamples : %i\n\n',totSamples);
-delete(h);
+%delete(h);
 
 ISINT8 =        strcmp(lower(featurePrecision),'int8');
 ISINT16 =       strcmp(lower(featurePrecision),'int16');
@@ -48,7 +58,7 @@ if ISFLOAT32    featureMax = 3.3e+037; end
 rand('seed',rseed);
 
 rot = @(P,dA)  [ cos(dA) -sin(dA); sin(dA) cos(dA)] * P;
-expp=@(s,n) (exp(-s:s/(n-1):0)-exp(-s))/(1-exp(-s))
+expp=@(s,n) (exp(-s:s/(n-1):0)-exp(-s))/(1-exp(-s));
 
 nDiv = 20;
 steepness = 1.3;
@@ -62,24 +72,24 @@ delta = 2*pi/numRots;
 
 coords_ = [];
 for i=1:nDiv
-	dA = delta * (i-1)/double(nDiv) + rand(1)*delta*0.5;
-	coords_ = [coords_ rot([0 radius(i)]',dA)];
+    dA = delta * (i-1)/double(nDiv) + rand(1)*delta*0.5;
+    coords_ = [coords_ rot([0 radius(i)]',dA)];
 end
 
 coords = [];
 for i=1:numRots
-	dA = delta*i;
-	coords = [coords rot(coords_,dA)];
+    dA = delta*i;
+    coords = [coords rot(coords_,dA)];
 end
 
 coords = [coords; (rand(size(coords))-0.5)*0.1*probeSize]; % the 0.1 here makes feature roots closer to the center of the patch
 
-size(coords)
+fprintf('Number of output features: %i\n',size(coords,2));
 
 fBase = 'F_';
 bot = 1;
 mkdir(outDir);
-coordsFile = [outDir 'coords.co'];
+coordsFile = [outDir 'Coords.co'];
 labelFile = [outDir 'Labels.lbl'];
 threshFile = [outDir 'Threshholds.thr'];
 posesFile = [outDir 'Poses.pose'];
@@ -110,6 +120,11 @@ fMax = [];
 while 1
     top = min(bot+maxFilesOpen-1,nFeatures);
     fprintf('\nGenerating features %i to %i ...\n',bot-1,top-1);
+    if isO
+        fflush(stdout);
+    else
+        drawnow;
+    end
     
     Q = bot:top;
     imCnt=0;
@@ -127,7 +142,7 @@ while 1
         
         % Load the depth and label images
         A=load([dataDir dirInfo(imageIndex).name]);
-        depth = A.depth; 
+        depth = A.depth;
         label = A.lbl;
         depth = single(depth);
         
@@ -160,7 +175,7 @@ while 1
             fwrite(fileHandles(feat),data(:,f),featurePrecision);
             ind = abs(data(:,f))~=featureMax;
             if all(~ind)
-               continue;
+                continue;
             end
             fMin(feat) = min(fMin(feat),min(data(ind,f)));
             fMax(feat) = max(fMax(feat),max(data(ind,f)));
@@ -173,12 +188,17 @@ while 1
             toc
             tic;
             fprintf('Image %i / %i\n ',imageIndex,nImages);
+            if isO
+                fflush(stdout);
+            else
+                drawnow;
+            end
             
-            imshow(depth,[]);
+            %imshow(depth,[]);
             %hold on;
             %plot(j,i,'r.','MarkerSize',1);
             %hold off;
-            drawnow;
+            %drawnow;
         end
         
     end
