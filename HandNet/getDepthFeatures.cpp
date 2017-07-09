@@ -1,4 +1,4 @@
-#include <omp.h>
+//#include <omp.h>
 #include <algorithm>
 #include <math.h>
 #include "mex.h"
@@ -32,7 +32,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	
     // An outer loop omp parfor is 10 times faster because less threads are created
     //omp_set_num_threads(6);
-    #pragma omp parallel for 
+    //#pragma omp parallel for 
 	for (int s = 0; s < nS; s++)
 	{
 		int row = i[s]-1;
