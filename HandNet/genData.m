@@ -1,5 +1,5 @@
 
-function genTempData(dataDir, outDir, nFeatures, probeSize, featurePrecision, maxFilesOpen, rseed)
+function genData(dataDir, outDir, nFeatures, probeSize, featurePrecision, maxFilesOpen, rseed)
 %Eg usage: genTempData('/home/gipadmin/Downloads/TestData/','/home/gipadmin/forks/tea/data/',200,50,'int8',200,0)
 isO = exist('OCTAVE_VERSION', 'builtin') ~= 0;
 warning off;

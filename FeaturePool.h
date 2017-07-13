@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <stdlib.h>     /* getenv */
 #include "log.h"
 #include "AtomicQueue.h"
 #include "Feature.h"
@@ -220,7 +221,15 @@ private:
 		Clock clk;
 		while (_loaderEnabled) 
 		{
+
 			clk.tic();
+			char* dropCacheStr = getenv("DROP_CACHE");
+			if (dropCacheStr && strcmp(dropCacheStr, "1") == 0)
+			{
+				FILE_LOG(LOG2) << " ---- NB : attempting to drop disk buffer/cache (sudo required) ... " ;
+			 	system("echo 3 | tee /proc/sys/vm/drop_caches");
+			}
+
 			// Run through all the features 
 			for (int fId = 0; fId < _numFeatures; fId++)
 			{				
@@ -233,6 +242,7 @@ private:
 
 			//We need to wait for all the threaded loads to return i.e. execute _loadRelease
 			_waitForLoads();		
+
 			//printf("Total load time for all features:%f\n",clk.toc());
 		}
 	}
