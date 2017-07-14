@@ -1,5 +1,6 @@
 Tea
 *.o
 *.mex
+*.*~
 build/
 data/

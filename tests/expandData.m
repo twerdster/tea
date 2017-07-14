@@ -48,7 +48,7 @@ f=fopen(sprintf('%sThreshholds.thr',inDataDir),'rb');
 a=fread(f,inf, 'single=>single' );
 fclose(f);
 f=fopen(sprintf('%sThreshholds.thr',outDataDir),'wb');
-a=a(mod(0:outNumFeatures-1,inNumFeatures)*3+1);
+a=a(mod((1:outNumFeatures*3)-1,inNumFeatures*3)+1);
 fwrite(f,a,'single');
 fclose(f);
 
@@ -56,7 +56,7 @@ f=fopen(sprintf('%sCoords.co',inDataDir),'rb');
 a=fread(f,inf, 'single=>single' );
 fclose(f);
 f=fopen(sprintf('%sCoords.co',outDataDir),'wb');
-a=a(mod(0:outNumFeatures-1,inNumFeatures)*4+1);
+a=a(mod((1:outNumFeatures*4)-1,inNumFeatures*4)+1);
 fwrite(f,a,'single');
 fclose(f);
 

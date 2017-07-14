@@ -1,3 +1,11 @@
+get some results
+for i in {1,5,10,20,100}; do 
+   echo $i $(cat LogFile_200-20-14-14-F_CHAR-100000000-$i-1-W_ONES-k5000m-T3_0000.log | 
+   grep -o -e "Processed Tree.*" | 
+   grep -o -e "[0-9]*\.[0-9]*"); 
+done
+
+
 Make sure number of gpus is correctly set for each test,
 and number of thresholds and number of features and which machines you 
 need to run on, some only need one machine and make sure the base paths are
