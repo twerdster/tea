@@ -1,0 +1,3 @@
+./Tea 200 20 20 20 F_CHAR 100000000 10 0 0 W_ONES /home/aaron/forks/tea/data/200-100-7-char/ 200-20-20-20-F_CHAR-100000000-10-1-W_ONES-gtx1080-T7 0 LOG2 "Test: Timing different number of GPUS"
+./Tea 200 20 20 20 F_CHAR 100000000 10 0 1 W_ONES /home/aaron/forks/tea/data/200-100-7-char/ 200-20-20-20-F_CHAR-100000000-10-2-W_ONES-gtx1080-T7 0 LOG2 "Test: Timing different number of GPUS"
+./Tea 200 20 20 20 F_CHAR 100000000 10 0 2 W_ONES /home/aaron/forks/tea/data/200-100-7-char/ 200-20-20-20-F_CHAR-100000000-10-3-W_ONES-gtx1080-T7 0 LOG2 "Test: Timing different number of GPUS"

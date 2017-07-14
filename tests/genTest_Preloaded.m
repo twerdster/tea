@@ -12,7 +12,7 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 % Should only show on one gpu I think, but can do everyone anyway
 
 baseTestDir='200-100-7';
-preloads=[10,20,50,100,200];
+preloads=[10,20,50,200];
 dropCache=[0 1];
 machines= { ...
     'k5000m',  '/media/gipadmin/data/' ,  ...
@@ -31,8 +31,9 @@ gpus('gtx580')=[1 2 3 4];
 T=default;
 %% Constant test component
 % --------------------------------
-T.depth=18;
-T.fold=18;
+T.numF=200;
+T.depth=16;
+T.fold=16;
 T.numS=100*1e6;
 T.numT=50; % The threshold checks define time taken doing processing which changes relevance of preloaded.
 T.comment='Test: Timing preload values with and without disk buffering on different numbers of GPUs';
@@ -82,7 +83,7 @@ if exist('dropCache') && dropCache
     dc='sudo DROP_CACHE=1 ';
 end
 
-testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s %s 0 %s "%s"', ...
+testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s/ %s 0 %s "%s"', ...
     dc, ...
     T.numF, ...
     T.preload, ...

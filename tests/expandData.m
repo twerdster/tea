@@ -1,4 +1,4 @@
-function expandData(inDataDir, inDataType, outDataDir, outNumSamples, outNumFeatures, outNumClasses, outDataType)
+function expandData(inDataDir, inDataType, outDataDir, outNumSamples, outNumFeatures, outNumClasses, outDataType, outClassDistribution)
 %% Detect input data
 d=dir([inDataDir '*.feat']);
 
@@ -38,11 +38,26 @@ a=fread(f,inf, 'uint8=>uint8' );
 fclose(f);
 f=fopen(sprintf('%sLabels.lbl',outDataDir),'wb');
 divs = uint8(ceil(outNumClasses/inNumClasses));
-a=a(ind)*divs + uint8(randi(divs,length(ind),1))-1;
-a=min(a,outNumClasses-1);
+if ~exist('outClassDistribution')
+    outClassDistribution='real';
+end
+
+if strcmp(outClassDistribution,'unbalanced')
+    a=a(ind);
+    a(a>0)=uint8(1);
+elseif strcmp(outClassDistribution,'uniform')
+    a=a(ind)*0 + uint8(randi(outNumClasses,length(ind),1))-1;
+    a=min(a,outNumClasses-1);
+elseif strcmp(outClassDistribution,'real')
+    a=a(ind)*divs + uint8(randi(divs,length(ind),1))-1;
+    a=min(a,outNumClasses-1);
+else
+    error('unknown distribution type');
+end
+a(1)=uint8(outNumClasses-1); % Gaurantees that the array will cover all classes. 
+
 fwrite(f,a,'uint8');
 fclose(f);
-
 
 f=fopen(sprintf('%sThreshholds.thr',inDataDir),'rb');
 a=fread(f,inf, 'single=>single' );

@@ -4,8 +4,8 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 
 %Speed:
 %T4: Need to test type of data: (Sparse, Uniform Random, Gaussian Random, Real data) = (5  machines, )
-baseTestDir='200-100-7-';
-testTypes={'sparse','uniform','gaussian','real'};
+baseTestDir='100-100-7-';
+testTypes={'unbalanced','uniform','real'};
 machines= { ...
     'k5000m',  '/media/gipadmin/data/' ,  ...
     'k80',     '/home/aaron/forks/tea/data/'    ,  ...
@@ -16,9 +16,11 @@ machines= { ...
 T=default;
 %% Constant test component
 % --------------------------------
+T.numF=100;
 T.depth=18;
 T.fold=18;
 T.numS=100*1e6;
+T.numT=10;
 T.comment='Test: Timing different data distributions';
 % --------------------------------
 for i = 2:2:length(machines)
@@ -60,7 +62,7 @@ if exist('dropCache') && dropCache
     dc='sudo DROP_CACHE=1 ';
 end
 
-testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s %s 0 %s "%s"', ...
+testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s/ %s 0 %s "%s"', ...
     dc, ...
     T.numF, ...
     T.preload, ...

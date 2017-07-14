@@ -4,7 +4,7 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 
 %Speed:
 %T10: Need to test types: short, flow (4 types , machines=odem,k80 i.e. high precision versus low precision machines) = (8 Tests)
-baseTestDir='200-100-7-';
+baseTestDir='100-100-7-';
 testTypes={'CHAR','SHORT','INT','FLOAT'};
 machines= { ...
     'k5000m',  '/media/gipadmin/data/' ,  ...
@@ -16,9 +16,11 @@ machines= { ...
 T=default;
 %% Constant test component
 % --------------------------------
-T.depth=18;
-T.fold=18;
+T.numF=100;
+T.depth=16;
+T.fold=16;
 T.numS=100*1e6;
+T.numT=10;
 T.comment='Test: Timing different data types';
 % --------------------------------
 for i = 2:2:length(machines)
@@ -61,7 +63,7 @@ if exist('dropCache') && dropCache
     dc='sudo DROP_CACHE=1 ';
 end
 
-testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s %s 0 %s "%s"', ...
+testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s/ %s 0 %s "%s"', ...
     dc, ...
     T.numF, ...
     T.preload, ...

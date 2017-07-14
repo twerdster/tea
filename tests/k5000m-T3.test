@@ -1,5 +1,4 @@
 ./Tea 200 20 14 14 F_CHAR 100000000 1 0 0 W_ONES /media/gipadmin/data/200-100-7-char/ 200-20-14-14-F_CHAR-100000000-1-1-W_ONES-k5000m-T3 0 LOG2 "Test: Timing different number of thresholds"
-./Tea 200 20 14 14 F_CHAR 100000000 2 0 0 W_ONES /media/gipadmin/data/200-100-7-char/ 200-20-14-14-F_CHAR-100000000-2-1-W_ONES-k5000m-T3 0 LOG2 "Test: Timing different number of thresholds"
 ./Tea 200 20 14 14 F_CHAR 100000000 3 0 0 W_ONES /media/gipadmin/data/200-100-7-char/ 200-20-14-14-F_CHAR-100000000-3-1-W_ONES-k5000m-T3 0 LOG2 "Test: Timing different number of thresholds"
 ./Tea 200 20 14 14 F_CHAR 100000000 5 0 0 W_ONES /media/gipadmin/data/200-100-7-char/ 200-20-14-14-F_CHAR-100000000-5-1-W_ONES-k5000m-T3 0 LOG2 "Test: Timing different number of thresholds"
 ./Tea 200 20 14 14 F_CHAR 100000000 10 0 0 W_ONES /media/gipadmin/data/200-100-7-char/ 200-20-14-14-F_CHAR-100000000-10-1-W_ONES-k5000m-T3 0 LOG2 "Test: Timing different number of thresholds"

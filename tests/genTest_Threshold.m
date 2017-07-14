@@ -13,10 +13,12 @@ machines= { ...
     'gtx1080', ['/home/aaron/forks/tea/data/'    testDir],  ...
     'gtx580',  ['/home/admin/forks/tea/data/'    testDir],  ...
     };
-thresholds=[1 2 3 5 10 20 50 100 200];
+thresholds=[1 3 5 10 20 50 100 200];
 T=default;
 %% Constant test component
 % --------------------------------
+T.numF=200;
+T.preload=20;
 T.depth=14;
 T.fold=14;
 T.numS=100*1e6;

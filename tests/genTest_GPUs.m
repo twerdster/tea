@@ -25,6 +25,7 @@ gpus('gtx580')=[1 2 3 4];
 T=default;
 %% Constant test component
 % --------------------------------
+T.numF=200;
 T.depth=20;
 T.fold =20;
 T.numS=100*1e6;
@@ -68,7 +69,7 @@ if exist('dropCache') && dropCache
     dc='sudo DROP_CACHE=1 ';
 end
 
-testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s %s 0 %s "%s"', ...
+testStr = sprintf('%s./Tea %u %u %u %u %s %u %u 0 %u %s %s/ %s 0 %s "%s"', ...
     dc, ...
     T.numF, ...
     T.preload, ...

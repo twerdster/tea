@@ -1,0 +1,8 @@
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-2-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-7-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-32-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-64-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-65-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-256-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-257-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"
+./Tea 20 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-1000-char/ 20-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T11 0 LOG2 "Test: Timing different number of classes"

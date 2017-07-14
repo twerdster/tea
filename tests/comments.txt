@@ -127,6 +127,53 @@ Cuda core speed: 	1544   	MHz
 Cuda cores: 		512
 
 
+tests:
+thresholds
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/200-100-7-char/',100*1e6,200,7,'int8');
+
+dataypes
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-CHAR/',100*1e6,100,7,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-SHORT/',100*1e6,100,7,'int16');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-INT/',100*1e6,100,7,'int32');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-FLOAT/',100*1e6,100,7,'single');
+
+distributions
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-unbalanced/',100*1e6,100,7,'int8','unbalanced');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-uniform/',100*1e6,100,7,'int8','uniform');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-real/',100*1e6,100,7,'int8','real');
+
+folding
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/100-100-7-char/',100*1e6,100,7,'int8');
+
+depths
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/200-100-7-char/',100*1e6,200,7,'int8');
+
+gpus
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/200-100-7-char/',100*1e6,200,7,'int8');
+
+preloaded
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/200-100-7-char/',100*1e6,200,7,'int8');
+
+numclasses 
+------------
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-2-char/',100*1e6,20,2,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-7-char/',100*1e6,20,7,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-32-char/',100*1e6,20,32,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-64-char/',100*1e6,20,64,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-65-char/',100*1e6,20,65,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-256-char/',100*1e6,20,256,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-257-char/',100*1e6,20,257,'int8');
+expandData('/media/gipadmin/data/200-54-7-char/','int8','/media/gipadmin/data/20-100-1000-char/',100*1e6,20,1000,'int8');
+
+
+
 
 
 

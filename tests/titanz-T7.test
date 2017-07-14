@@ -1,0 +1,2 @@
+./Tea 200 20 20 20 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/200-100-7-char/ 200-20-20-20-F_CHAR-100000000-10-1-W_ONES-titanz-T7 0 LOG2 "Test: Timing different number of GPUS"
+./Tea 200 20 20 20 F_CHAR 100000000 10 0 1 W_ONES /home/gipuser/forks/tea/data/200-100-7-char/ 200-20-20-20-F_CHAR-100000000-10-2-W_ONES-titanz-T7 0 LOG2 "Test: Timing different number of GPUS"
