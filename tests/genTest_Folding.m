@@ -7,7 +7,7 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 % Can show a tree which "forks" after folding depth and is computed
 % serially i.e. exponentially increasing computation time after folding
 % depth?? (is this even true?)
-testDir='100-100-7-char';
+testDir='54-100-7-char';
 machines= { ...
     'k5000m',  ['/media/gipadmin/data/' testDir],  ...
     'k80',     ['/home/aaron/forks/tea/data/'    testDir],  ...
@@ -19,7 +19,7 @@ folds=[14 16 18 20 22];
 T=default;
 %% Constant test component
 % --------------------------------
-T.numF=100;
+T.numF=54;
 T.depth=22;
 T.numS=100*1e6;
 T.numT=10;

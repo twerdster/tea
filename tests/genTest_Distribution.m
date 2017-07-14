@@ -4,7 +4,7 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 
 %Speed:
 %T4: Need to test type of data: (Sparse, Uniform Random, Gaussian Random, Real data) = (5  machines, )
-baseTestDir='100-100-7-';
+baseTestDir='20-100-7-';
 testTypes={'unbalanced','uniform','real'};
 machines= { ...
     'k5000m',  '/media/gipadmin/data/' ,  ...
@@ -16,11 +16,11 @@ machines= { ...
 T=default;
 %% Constant test component
 % --------------------------------
-T.numF=100;
+T.numF=20;
 T.depth=18;
 T.fold=18;
 T.numS=100*1e6;
-T.numT=10;
+T.numT=20;
 T.comment='Test: Timing different data distributions';
 % --------------------------------
 for i = 2:2:length(machines)

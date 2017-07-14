@@ -1,3 +1,3 @@
-./Tea 100 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/100-100-7-unbalanced/ 100-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
-./Tea 100 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/100-100-7-uniform/ 100-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
-./Tea 100 20 18 18 F_CHAR 100000000 10 0 0 W_ONES /home/gipuser/forks/tea/data/100-100-7-real/ 100-20-18-18-F_CHAR-100000000-10-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
+./Tea 20 20 18 18 F_CHAR 100000000 20 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-7-unbalanced/ 20-20-18-18-F_CHAR-100000000-20-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
+./Tea 20 20 18 18 F_CHAR 100000000 20 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-7-uniform/ 20-20-18-18-F_CHAR-100000000-20-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
+./Tea 20 20 18 18 F_CHAR 100000000 20 0 0 W_ONES /home/gipuser/forks/tea/data/20-100-7-real/ 20-20-18-18-F_CHAR-100000000-20-1-W_ONES-titanz-T4 0 LOG2 "Test: Timing different data distributions"
