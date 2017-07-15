@@ -12,8 +12,8 @@ default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','nu
 % Should only show on one gpu I think, but can do everyone anyway
 
 baseTestDir='200-54-7-char';
-preloads=[1,4,20,50,100, 200];
-dropCache=[0 1];
+preloads=[4,20,50,100, 200];
+dropCache=[1];
 machines= { ...
     'k5000m',  '/media/gipadmin/data/' ,  ...
     'k80',     '/home/aaron/forks/tea/data/'    ,  ...
@@ -35,7 +35,7 @@ T.numF=200;
 T.depth=16;
 T.fold=16;
 T.numS=54*1e6;
-T.numT=50; % The threshold checks define time taken doing processing which changes relevance of preloaded.
+T.numT=10; % The threshold checks define time taken doing processing which changes relevance of preloaded.
 T.comment='Test: Timing preload values with and without disk buffering on different numbers of GPUs';
 % --------------------------------
 for i = 2:2:length(machines)

@@ -52,7 +52,8 @@ enum HistType { HIST_64, HIST_256, HIST_REGULAR};
 enum FeatureType { F_CHAR=0, F_SHORT, F_INT, F_FLOAT};
 enum WeightType { W_ONES=0, W_APRIORI, W_FILE};
 
-
+// NOTE: we really need to add pointer type and other better defines so we can use sizeof and not have to get what is being used.
+//       There should be no native types in the main program code. i.e. no char, uchar etc.
 
 //Round a / b to nearest higher integer value
 inline uint iDivUp(uint a, uint b){ return (a % b != 0) ? (a / b + 1) : (a / b); }
@@ -80,7 +81,7 @@ struct RFNode
 struct CompactLeaf
 {
 	uint maxVal;
-	uchar label;
+	ushort label; // NOTE: This is now ushort. It will break compatibility with trees before this version.
 };
 
 struct TreeHeader
@@ -93,11 +94,11 @@ struct TreeHeader
 
 struct Tree
 {
-	char * treeAlloc;
+	char * treeAlloc;  // NOTE: should probably be some nicer type which represents a byte  pointer. char is distracting.
 	TreeHeader* th;
 	RFNode* nodes;
 	CompactLeaf* compactLeaves;
-	uchar* histograms;
+	uchar* histograms; // NOTE: should probably be char* or some nicer type which represents a byte  pointer. uchar is distracting.
 };
 
 struct ForrestHeader

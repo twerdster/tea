@@ -20,7 +20,7 @@ __global__
 		if ( ntype == PARENT_NODE || CHILD(d_feature[idx], thresh) ) 
 		{
 			int node = binarySearch(idx, d_nodes, nodeBegin, nodeEnd, idxBegin);			
-			atomicAdd( &d_histogram[ (node - nodeBegin) * numClasses + LABEL(d_sample[idx])  ]  , 1 );
+			atomicAdd( &d_histogram[ (node - nodeBegin) * numClasses + LABEL(d_sample[idx])  ]  , 1 ); // NOTE: will overflow for more than 4bn samples.
 		}
 	}
 }

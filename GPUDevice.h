@@ -183,7 +183,7 @@ public:
 	uint* partialHistograms()	{ return _partialHistograms; }
 	RFTrainNode* nodes()  		{ return _nodes; }			
 	Sample* samples()			{ return _samples; }	
-	uint* W()					{ return _apriori; }
+	uint* W()					{ return _apriori; } // NOTE: this should be made into a float array
 
 	uint histBytes()			{ return _histBytes; }
 	uint histWords()			{ return _histBytes/sizeof(uint); }

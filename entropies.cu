@@ -123,7 +123,7 @@ __global__
 
 		//------- LEFT CHILD----------		
 		for (int j = 0; j<numClasses; j++) 
-			histograms[idxLeftChild + j] = histograms[idxParent + j] - histograms[idxRightChild + j];		
+			histograms[idxLeftChild + j] = histograms[idxParent + j] - histograms[idxRightChild + j];		// Parent is always larger than child if histograms are not modified
 		shanon(numClasses , histograms + idxRightChild, iL, sL, W);								
 		//-----------------------------
 

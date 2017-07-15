@@ -97,6 +97,8 @@ void generateSampleTrajectoriesFromBuildState(int depth, std::string sampleLabel
 //the histogram provided is complete. One simple way of reducing histogram memory by half is to not store intermediate histograms.
 void generateTreeFromBuildState(int depth, std::string treeName)
 {	
+	Clock clk;
+	clk.tic();
 	int totalNodes = pow(2.0f, depth + 1) - 1; // All the nodes sum to this number
 	int totalHists = 2*totalNodes + 1; // There are 2 histograms under every node and one above the root node
 
@@ -111,7 +113,7 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	tree.histograms =		(uchar*)		((char*)tree.compactLeaves	+ sizeof(CompactLeaf)*totalHists);
 	uint * fullHistograms = new uint[totalHists*numClasses];
 	memset(fullHistograms,0,sizeof(uint)*totalHists*numClasses);
-	Clock clk;
+	
 	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++) 
 	{
 		for (int s = nodes[nIdx].idxBegin; s <= nodes[nIdx].idxEnd; s++)
@@ -158,6 +160,10 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		}
 
 		CompactLeaf &cl = tree.compactLeaves[n];
+		// NOTE: the following line may be an error because it doesnt take into account the scoreWeights.
+		//        should probably correct this. Currently its only a minor error because the label is still correct and
+		//        this is whats used at runtime. But in general scoreWeights should definitely be taken into account.
+		//        Fixed line should probably be: cl.maxVal = (1.0f/((float)scoreWeights[j]))*(float)fullHistograms[n*tree.th->numClasses + distVal];
 		cl.maxVal = fullHistograms[n*tree.th->numClasses + distVal];
 		cl.label = distVal;		
 		//printf("[%i,%i]\n",(int)cl.label,(int)cl.maxVal);
@@ -177,6 +183,10 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		for (int c = 0 ; c < tree.th->numClasses; c++)
 		{
 			//We compress the histogram into a byte so that the histograms dont take up too much space otherwise we would just do a memcpy here
+			// NOTE: this is almost certainly now an error if we are not taking into account scoreWeights.
+			//        the result will be an overflow for all the histogram bins which are larger than cl.maxVal
+			//        Must fix this this. However can still stay inside a byte. Does not need to be larger.
+			//        fixed line should probably be: uchar val = (1.0f/((float)scoreWeights[j]))*((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
 			uchar val = ((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
 			tree.histograms[n*tree.th->numClasses + c] = val;
 		}
@@ -227,14 +237,14 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	for (int i=0; i<numClasses; i++)
 		FILE_LOG(LOG1) << std::setprecision(2) << std::setw(3) << i << "(" << std::setw(6) << std::fixed << 100.0f*(float)total[i]/(float)numSamples << "%):" << std::fixed << 100.0f*(float)correct[i]/(float)total[i];
 
-	FILE_LOG(LOG1) << "----Confusion data------";
+	FILE_LOG(LOG3) << "----Confusion data------";
 	
 	std::stringstream ss;	
 	ss.str("");
 	ss << std::setw(9) << "Tru\\Pred";
 	for (int i=0;i<numClasses; i++) 
 		ss << std::setw(10) << i;
-	FILE_LOG(LOG1) << ss.str().c_str();
+	FILE_LOG(LOG3) << ss.str().c_str();
 
 	for (int i=0; i<numClasses; i++)
 	{
@@ -242,7 +252,7 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		ss << std::setw(8) << i << ":";
 		for (int j=0; j<numClasses; j++)
 			ss << std::setw(10) << confusion[j + i*numClasses];
-		FILE_LOG(LOG1) << ss.str().c_str();
+		FILE_LOG(LOG3) << ss.str().c_str();
 	}
 
 
@@ -256,6 +266,7 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	delete[] total;
 	delete[] fullHistograms;
 	delete[] tree.treeAlloc;
+	FILE_LOG(LOG1) << "Full tree snapshot and self success timing in " << std::fixed << clk.toc() << "s";
 }
 
 void pushMapTasksData(int deviceId)
@@ -408,6 +419,7 @@ void launchMapTask(int depth, int workerId, int featureToken)
 	FILE_LOG(LOG1) << "Worker: " << workerId << ", Feature: " << fId<< " completed in " << std::fixed << clk.toc() << "s";
 }
 
+
 template <class Ftype>
 int runBuilder()
 {
@@ -433,14 +445,14 @@ int runBuilder()
 	}
 
 	// ------------------Read in the label list and load up the sample list 
-	uchar* labelList;
+	ushort* labelList;
 	labelList =		0;
 	sampleList =	0;
 
-	cudaHostAlloc(&labelList, numSamples*sizeof(uchar),cudaHostAllocPortable);
+	cudaHostAlloc(&labelList, numSamples*sizeof(ushort),cudaHostAllocPortable);
 	cudaHostAlloc(&sampleList, numSamples*sizeof(Sample),cudaHostAllocPortable);
 
-	readList<uchar>(labelList, numSamples, (baseDir + "Labels.lbl"));
+	readList<ushort>(labelList, numSamples, (baseDir + "Labels.lbl"));
 	numClasses = *std::max_element(labelList, labelList + numSamples) + 1; // Classes start from 0 
 
 	for (int i = 0; i < numSamples; i++)
@@ -496,7 +508,7 @@ int runBuilder()
 	//__PROBLEM__: score weights should be returned? They are there to weight the errors
 
 
-	Clock totalclk;
+	Clock totalclk,tmpclock;
 	totalclk.tic();
 	// ------------------Start running the main loop
 
