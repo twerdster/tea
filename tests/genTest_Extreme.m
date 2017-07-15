@@ -1,4 +1,4 @@
-function genTest_NumClasses()
+function genTest_Extreme()
 testStr = 'T12';
 default=struct('numF',200,'preload',20,'depth',10,'fold',10,'Ftype','F_CHAR','numS',10*1e6,'numT',50,'numGPU',1,'weightType','W_ONES','baseDir','','prefix','','log','LOG2','comment','');
 
