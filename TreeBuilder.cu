@@ -563,7 +563,7 @@ int runBuilder()
 	delete (GPUWorkerPool<Ftype>*)gpuWorkerPool;
 	FILE_LOG(LOG0) << "Tree construction complete.\n\n\n";
 
-	getchar();
+	//getchar();
 
 	return 0;
 } 
