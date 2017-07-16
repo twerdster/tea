@@ -10,7 +10,7 @@ inNumSamples=length(a);
 fclose(f);
 
 f=fopen([inDataDir 'Labels.lbl'],'rb');
-a=fread(f,inf,'uint8');
+a=fread(f,inf,'uint16=>uint16');
 inNumClasses=max(a)+1;
 fclose(f);
 
@@ -34,29 +34,29 @@ for i = 0:outNumFeatures-1
 end
 
 f=fopen(sprintf('%sLabels.lbl',inDataDir),'rb');
-a=fread(f,inf, 'uint8=>uint8' );
+a=fread(f,inf, 'uint16=>uint16' );
 fclose(f);
 f=fopen(sprintf('%sLabels.lbl',outDataDir),'wb');
-divs = uint8(ceil(outNumClasses/inNumClasses));
+divs = uint16(ceil(outNumClasses/inNumClasses));
 if ~exist('outClassDistribution')
     outClassDistribution='real';
 end
 
 if strcmp(outClassDistribution,'unbalanced')
     a=a(ind);
-    a(a>0)=uint8(1);
+    a(a>0)=uint16(1);
 elseif strcmp(outClassDistribution,'uniform')
-    a=a(ind)*0 + uint8(randi(outNumClasses,length(ind),1))-1;
+    a=a(ind)*0 + uint16(randi(outNumClasses,length(ind),1))-1;
     a=min(a,outNumClasses-1);
 elseif strcmp(outClassDistribution,'real')
-    a=a(ind)*divs + uint8(randi(divs,length(ind),1))-1;
+    a=a(ind)*divs + uint16(randi(divs,length(ind),1))-1;
     a=min(a,outNumClasses-1);
 else
     error('unknown distribution type');
 end
-a(1)=uint8(outNumClasses-1); % Gaurantees that the array will cover all classes. 
+a(1)=uint16(outNumClasses-1); % Gaurantees that the array will cover all classes. 
 
-fwrite(f,a,'uint8');
+fwrite(f,a,'uint16');
 fclose(f);
 
 f=fopen(sprintf('%sThreshholds.thr',inDataDir),'rb');
@@ -87,7 +87,7 @@ outNumSamples=length(a);
 fclose(f);
 
 f=fopen([outDataDir 'Labels.lbl'],'rb');
-a=fread(f,inf,'uint8');
+a=fread(f,inf,'uint16=>uint16');
 outNumClasses=max(a)+1;
 fclose(f);
 

@@ -105,7 +105,7 @@ delete(posesFile);
 delete([outDir '*.feat']);
 
 coordsSize = (4*nFeatures)*sizeof('single');
-labelSize = totSamples*sizeof('int8');
+labelSize = totSamples*sizeof('int16');
 posesSize = totSamples*sizeof('int32');
 
 system(['head -c ' num2str(coordsSize) ' </dev/zero >' coordsFile]);
@@ -149,7 +149,8 @@ while 1
         % Sample all values that are part of the hand
         inds = int32(find(label>=1));
         
-        %Turn the background into -1 and the first label into 0
+        %Turn the background into -1 (actually it will be zero because its uint8) and the first label into 0
+        % but its fine because the bg labels are ignored 
         label = label-1;
         nSampled = length(inds);
         
@@ -181,7 +182,7 @@ while 1
             fMax(feat) = max(fMax(feat),max(data(ind,f)));
         end
         if Q(1) == 1 % We only need to run this once for the outer iteration
-            fwrite(fLabel,labels,'uint8');
+            fwrite(fLabel,labels,'uint16');
             fwrite(fPose, poses, 'uint32');
         end
         if mod(imCnt,50) == 0

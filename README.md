@@ -17,10 +17,9 @@ The default output of Tea is an unpruned randomized decision tree with its leave
 input example. Performing inference using Tea is incredibly fast and we provide a number of different implementations for different
 platforms using CPU, GPU and FPGA.   
 
-## Tea bagging
+## Bagging with Tea
 
 Tea can perform bagging efficiently during training.   
-By combining the leaves from different trees it is possible 
 
 ## Whats in a name?
 

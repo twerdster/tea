@@ -39,17 +39,25 @@ public:
 		_gpuDevice->setCurrent();
 		//outStr.str();
 
-		cudaStreamCreate( &_stream);		
+		size_t featureMem = _numSamples*sizeof(Ftype);
+		size_t indexBufMem = BLOCKSIZE_1 * sizeof(uint);
+		size_t dataBufMem = BLOCKSIZE_1 * sizeof(Ftype);
 
-		cudaError_t err = cudaMalloc( &_d_data, _numSamples*sizeof(Ftype));
+		cudaStreamCreate( &_stream);		
+		FILE_LOG(LOG1) << "Allocating for GPUWorker ("<< gpuDevice->deviceId() << "):";
+		FILE_LOG(LOG1) << "     featureMem:  " << featureMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     indexBufMem: " << indexBufMem/1024 << "kb";
+		FILE_LOG(LOG1) << "     dataBufMem:  " << dataBufMem/1024 << "kb";
+
+		cudaError_t err = cudaMalloc( &_d_data, featureMem);
 		if (err != cudaSuccess)
 		{
 			FILE_LOG(logERROR) << "Could not allocate worker memory on gpuDevice: "<< gpuDevice->deviceId();
 			FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
 			system("pause");
 		}
-		cudaMalloc( &_indexBuffer, BLOCKSIZE_1 * sizeof(uint));
-		cudaMalloc( &_dataBuffer, BLOCKSIZE_1 * sizeof(Ftype));
+		cudaMalloc( &_indexBuffer, indexBufMem);
+		cudaMalloc( &_dataBuffer, dataBufMem);
 	}
 
 	inline void setWorkerHeading(int workerId, int fId)
