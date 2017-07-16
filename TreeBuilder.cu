@@ -454,6 +454,7 @@ int runBuilder()
 
 	readList<ushort>(labelList, numSamples, (baseDir + "Labels.lbl"));
 	numClasses = *std::max_element(labelList, labelList + numSamples) + 1; // Classes start from 0 
+	FILE_LOG(LOG0) << "Number of classes detected in Labels.lbl : " << numClasses;
 
 	for (int i = 0; i < numSamples; i++)
 	{

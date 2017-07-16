@@ -20,7 +20,7 @@ T.numF=20;
 T.depth=18;
 T.fold=18;
 T.numS=100*1e6;
-T.numT=20;
+T.numT=10;
 T.comment='Test: Timing different data distributions';
 % --------------------------------
 for i = 2:2:length(machines)

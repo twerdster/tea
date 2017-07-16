@@ -26,7 +26,7 @@ gpus('k5000m')=[1];
 gpus('k80')=[1 2];
 gpus('titanz')=[1 2];
 gpus('gtx1080')=[1 2 3];
-gpus('gtx580')=[1 2 3 4];
+gpus('gtx580')=[1 2 4];
 
 T=default;
 %% Constant test component
@@ -54,7 +54,7 @@ for i = 2:2:length(machines)
                 T.numGPU=numGPU;
                 T.preload=preload;
                 fprintf('%s\n',genTestString(T,dc));
-                 fprintf(f,'%s\n',genTestString(T,dc));
+                fprintf(f,'%s\n',genTestString(T,dc));
                 % --------------------------------
             end
         end

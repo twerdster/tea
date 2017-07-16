@@ -61,7 +61,7 @@ public:
 		size_t sampleMem = numSamples*sizeof(Sample);
 		size_t classesMem = numClasses*sizeof(uint);
 		
-		FILE_LOG(LOG1) << "Allocating on GPU ("<< _deviceId << "):";
+		FILE_LOG(LOG1) << "Allocating for GPUDevice("<< _deviceId << "):";
 		FILE_LOG(LOG1) << "     partialMem: " << partialMem/1024 << "kb";
 		FILE_LOG(LOG1) << "     histMem: " << histMem/1024 << "kb";
 		FILE_LOG(LOG1) << "     nodeMem: " << nodeMem/1024 << "kb";

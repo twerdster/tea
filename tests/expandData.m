@@ -11,7 +11,7 @@ fclose(f);
 
 f=fopen([inDataDir 'Labels.lbl'],'rb');
 a=fread(f,inf,'uint16=>uint16');
-inNumClasses=max(a)+1;
+inNumClasses=double(max(a)+1);
 fclose(f);
 
 fprintf('Detected: inSamples=%gm, inFeatures=%i, inClasses=%i\n',uint32(inNumSamples/1e6),inNumFeatures,inNumClasses);
