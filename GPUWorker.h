@@ -93,33 +93,23 @@ public:
 	float calculateThreshold(int tId, int fId, std::vector<float> & thresh, int numThresh)
 	{
 		float eps = 1e-5f;
-		float maxVal = floor(thresh[fId*3 + 0]/2.0f - 1); // maxVal comes from the maximum positive value a pixel can have. See generatedata and getfeatures for more info
+		//float maxVal = thresh[fId*3 + 0]; 
 		float featureMin = thresh[fId*3 + 1];
 		float featureMax = thresh[fId*3 + 2];
 
 		if (numThresh == 1)
 		{
-			return maxVal - eps; // Not necessarily the best choice
+			return featureMax - eps; // Not necessarily the best choice
 		}
 
-		if (numThresh == 2)
+		if (numThresh >= 2)
 		{
-			if (tId==0) return maxVal - eps;
-			if (tId==1) return 0 - eps;
-		}		
+			float tDelta = (featureMax-eps - (featureMin+eps))/(float(numThresh) - 1.0f);
 
-		if (numThresh >= 3)
-		{
-			if (tId==0) return maxVal - eps;
-			if (tId==1) return 0 - eps;
-			if (tId==2) return featureMin - eps;
-
-			float tDelta = (featureMax - featureMin)/(numThresh - 3);
-
-			return (featureMin - eps) + (tId-2)*tDelta;	
-			//return (tId < numThresh -1)? (featureMin - eps) + rand()/(float)RAND_MAX*(featureMax - featureMin) : maxVal - eps;		
+			return (featureMin+eps) + tId*tDelta;	
+			//return (featureMin+eps) + rand()/(float)RAND_MAX*(numThresh-1)*tDelta;		
 		}
-		return  3.4e38f;
+		return  3.4e38f; // arbitrary. only happens when someone puts in no thresholds.
 	}
 
 

@@ -44,6 +44,10 @@ FeatureType featureType;
 WeightType weightType;
 std::string baseDir;
 std::string treePrefix;
+std::string testDataPath;
+std::string testLabelPath;
+int testNumFeats;
+int testNumSamples;
 
 uint *fwdIndexList, *revIndexList;
 
@@ -63,6 +67,267 @@ void loadTreeBuildState()
 {
 	//load up data from above;
 }
+
+void getInfo(const char * forest)
+{	
+
+	ForrestHeader fh = *(ForrestHeader*)forest;
+	TreeHeader th = *(TreeHeader*)(forest + sizeof(ForrestHeader));
+	
+    printf("tree.depth = %i\n",th.depth);
+    printf("tree.numClasses = %i\n",th.numClasses);
+    printf("tree.totalNodes = %i\n",th.totalNodes);
+    printf("tree.totalHists = %i\n",th.totalHists);
+    
+    printf("forest.numTrees = %i\n",fh.numTrees);
+    printf("forest.treeAllocSize = %i\n",fh.treeAllocSize);	
+}
+
+//Note, all trees in a forest are assumed to be the same depth
+char* loadForest(std::string treeBase, int maxDepth, int firstTree, int numTrees)
+{
+	char* forestAlloc;
+	std::ostringstream ss;
+	ss << std::setw(4) << std::setfill('0') << firstTree;
+	std::string treeName = treeBase + "_" + ss.str() + ".tree";         
+
+	std::ifstream ifs(treeName.c_str(), std::ios::binary);
+    
+	TreeHeader th, thMax;
+	ifs.read((char*)&th,sizeof(TreeHeader));
+	ifs.close();
+     
+    printf("Max allowable depth: %i\n", maxDepth);
+    printf("First tree: %i\n", firstTree);
+    printf("Number of trees: %i\n", numTrees);    
+    printf("Real tree depth: %i\n", th.depth);
+    printf("Real number of classes: %i\n", th.numClasses);
+    printf("Real number of nodes: %i\n", th.totalNodes);
+    printf("Real number of histograms: %i\n", th.totalHists);
+
+    maxDepth = (maxDepth < th.depth)?maxDepth:th.depth;
+    int totalNodes = pow(2.0f, maxDepth + 1) - 1; // All the nodes sum to this number
+	int totalHists = 2*totalNodes + 1; // There are 2 histograms under every node and one above the root node
+    
+    thMax.depth = maxDepth;
+    thMax.numClasses = th.numClasses;
+    thMax.totalNodes = totalNodes;
+    thMax.totalHists = totalHists;
+    
+	int allocSize = sizeof(TreeHeader) + sizeof(RFNode)*totalNodes + sizeof(CompactLeaf)*totalHists + sizeof(uchar)*totalHists*th.numClasses;
+	int forestAllocSize = sizeof(ForrestHeader) + allocSize*numTrees;
+    
+    printf("Forest allocation size: %f mb\n",forestAllocSize/1e6);
+
+	char *forestPtr = new char[forestAllocSize];
+	forestAlloc = forestPtr;
+
+	ForrestHeader fh;
+	fh.numTrees = numTrees;
+	fh.treeAllocSize = allocSize;
+
+	*(ForrestHeader*)forestAlloc = fh;
+    forestAlloc +=sizeof(ForrestHeader);
+    
+
+	for (int t = 0; t < numTrees; t++)
+	{       
+		ss.str("");
+		ss << std::setw(4) << std::setfill('0') << t+firstTree;
+		treeName = treeBase + "_" + ss.str() + ".tree";
+		Tree tree;
+		loadTree(treeName,tree);
+		
+        memcpy(forestAlloc, &thMax,      sizeof(TreeHeader));    
+        
+        forestAlloc+=sizeof(TreeHeader);
+        memcpy(forestAlloc, tree.nodes,  sizeof(RFNode)*thMax.totalNodes); 
+        
+        forestAlloc+=(sizeof(RFNode)*thMax.totalNodes);
+        memcpy(forestAlloc, tree.compactLeaves, sizeof(CompactLeaf)* thMax.totalHists); 
+        
+        forestAlloc+=(sizeof(CompactLeaf)* thMax.totalHists);
+        memcpy(forestAlloc, tree.histograms, sizeof(uchar)*thMax.totalHists*thMax.numClasses); 
+        
+        forestAlloc+=(sizeof(uchar)*thMax.totalHists*thMax.numClasses);
+                        
+		deleteTree(tree);
+	}
+	return forestPtr;
+        
+}
+
+struct Results
+{
+	ushort * labels;
+	uint * histograms;
+	uint * nodeTrajs;
+	float * scores;
+	Tree * tree;
+	Results(): labels(0),histograms(0),nodeTrajs(0),scores(0){}
+	void init(int numSamples, int numFeats, int numTrees) 
+	{
+//		labels=new ushort[numSamples*numTrees];
+	}
+	void clean() {delete[] labels;delete[] histograms;delete[] nodeTrajs;delete[] scores;}
+	~Results() {clean();}
+};
+
+
+template <class Ftype>
+Results* processExamples(char * forest, Ftype * data, int numFeats, int numSamples, int maxDepth, float* weights=0)
+{
+	ForrestHeader fh = *(ForrestHeader*)forest;
+	TreeHeader th = *(TreeHeader*)(forest + sizeof(ForrestHeader));
+
+	Results * res = new Results();
+	res->histograms = new uint[numSamples*th.numClasses];
+	memset(res->histograms,0,numSamples*th.numClasses);
+
+   // omp_set_num_threads(4);
+    //#pragma omp parallel for 
+	for (int m = 0; m < numSamples; m++)
+	{
+        //int th_id;   
+        //th_id = omp_get_thread_num();
+        //uint * h = H + th_id*hsz;
+		//memset(h, 0, fh.numTrees*th.numClasses*sizeof(uint));		
+		for (int t = 0; t < fh.numTrees; t++)
+		{
+			Tree tree;
+			tree.treeAlloc = forest + sizeof(ForrestHeader) + t*fh.treeAllocSize;
+			loadTree(tree);
+            if (maxDepth > tree.th->depth)
+                maxDepth = tree.th->depth;
+
+            float w = (weights)? weights[t]: 1.0/(float)fh.numTrees;
+
+			uint leaf = 0;
+			
+			//Find leaf node for tree t
+			for (int d = 0; d <= maxDepth ; d++)
+			{
+                int fId = tree.nodes[leaf].F;
+				float feat = data[fId + m*numFeats];                      
+				leaf = leaf*2 + uint(feat > tree.nodes[leaf].thr) + 1;
+			}
+
+			for (int c = 0; c < th.numClasses; c++)
+			{
+				res->histograms[m*th.numClasses + c] += (w * tree.histograms[leaf*th.numClasses + c] );
+			}
+		}
+
+	}
+	return res;
+}
+
+template <class Ftype>
+void getTreeAccuracy(std::string treeBase, int maxDepth, int treeNum, std::string dataPath, std::string labelPath, int numFeats, int numSamples)
+{
+	//Read a forest with one tree: 
+	ForrestHeader fh;
+	Tree tree;
+
+	char* forest = loadForest(treeBase, maxDepth, treeNum, 1);
+	fh = *(ForrestHeader*)forest;
+	tree.treeAlloc = forest + sizeof(ForrestHeader) + 0*fh.treeAllocSize;
+	loadTree(tree);
+
+	// Load test data
+	Ftype *data = new Ftype[numSamples*numFeats];
+	readList<Ftype>(data, numSamples*numFeats, dataPath);
+
+	// Perform inference and get the Results
+	Results*  res = processExamples(forest, data, numFeats, numSamples, maxDepth);//, float* weights=0)
+	std::ofstream ofs((treeBase+"hist.hist").c_str(), std::ios::binary);
+	
+	std::cout<<"NAME:     " <<treeBase+"hist.hist" <<std::endl;
+	ofs.write((char*)res->histograms, sizeof(uint)*numSamples*tree.th->numClasses);
+	std::cout<<"SIZE:      "<<numSamples*tree.th->numClasses <<std::endl;
+	ofs.close();
+	// load labels
+	ushort *labelList = new ushort[numSamples];
+	readList<ushort>(labelList, numSamples, labelPath);
+
+	int correct=0;
+	for (int i=0; i < numSamples; ++i)
+	{
+		int ind=-1;
+		uint maxVal=0;
+		for (int c = 0 ; c < tree.th->numClasses; ++c)
+		{
+			uint val = res->histograms[i*tree.th->numClasses + c];
+			if (val>maxVal) {maxVal=val; ind=c;}
+		}
+		correct+=(int(labelList[i])==ind);
+	}
+	FILE_LOG(LOG0) << "TEST: ";
+	FILE_LOG(LOG0) << "  correct : " << float(correct)/float(numSamples);
+
+
+
+	// compute accuracy
+	delete res;
+	delete[] labelList;
+	delete[] data;
+	delete[] forest;
+
+}
+
+template <class Ftype>
+void getTreeAUC(std::string treeBase, int maxDepth, int treeNum, std::string dataPath, std::string labelPath, int numFeats, int numSamples)
+{
+	//Read a forest with one tree: 
+	ForrestHeader fh;
+	Tree tree;
+
+	char* forest = loadForest(treeBase, maxDepth, treeNum, 1);
+	fh = *(ForrestHeader*)forest;
+	tree.treeAlloc = forest + sizeof(ForrestHeader) + 0*fh.treeAllocSize;
+	loadTree(tree);
+
+	// Load test data
+	Ftype *data = new Ftype[numSamples*numFeats];
+	readList<Ftype>(data, numSamples*numFeats, dataPath);
+
+	// Perform inference and get the Results
+	Results*  res = processExamples(forest, data, numFeats, numSamples, maxDepth);//, float* weights=0)
+
+
+
+	// // load labels
+	// ushort *labelList = new ushort[numSamples];
+	// readList<ushort>(labelList, numSamples, labelPath);
+
+	// int correct=0;
+	// for (int i=0; i < numSamples; ++i)
+	// {
+	// 	int ind=-1;
+	// 	uint maxVal=0;
+	// 	for (int c = 0 ; c < tree.th->numClasses; ++c)
+	// 	{
+	// 		uint val = res->histograms[i*tree.th->numClasses + c];
+	// 		if (val>maxVal) {maxVal=val; ind=c;}
+	// 	}
+	// 	correct+=(int(labelList[i])==ind);
+	// }
+	// FILE_LOG(LOG0) << "TEST: ";
+	// FILE_LOG(LOG0) << "  correct : " << float(correct)/float(numSamples);
+
+
+
+	// compute accuracy
+	delete res;
+	//delete[] labelList;
+	delete[] data;
+	delete[] forest;
+}
+
+
+
+
+
 
 //This function saves the tree leaf number every sample has fallen into for the current depth
 void generateSampleTrajectoriesFromBuildState(int depth, std::string sampleLabelsName)
@@ -114,6 +379,7 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	uint * fullHistograms = new uint[totalHists*numClasses];
 	memset(fullHistograms,0,sizeof(uint)*totalHists*numClasses);
 	
+	//regenerate the full histogram from all the samples
 	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++) 
 	{
 		for (int s = nodes[nIdx].idxBegin; s <= nodes[nIdx].idxEnd; s++)
@@ -160,21 +426,8 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		}
 
 		CompactLeaf &cl = tree.compactLeaves[n];
-		// NOTE: the following line may be an error because it doesnt take into account the scoreWeights.
-		//        should probably correct this. Currently its only a minor error because the label is still correct and
-		//        this is whats used at runtime. But in general scoreWeights should definitely be taken into account.
-		//        Fixed line should probably be: cl.maxVal = (1.0f/((float)scoreWeights[j]))*(float)fullHistograms[n*tree.th->numClasses + distVal];
-		cl.maxVal = fullHistograms[n*tree.th->numClasses + distVal];
+		cl.maxVal = maxVal; //Histograms[n*tree.th->numClasses + distVal];
 		cl.label = distVal;		
-		//printf("[%i,%i]\n",(int)cl.label,(int)cl.maxVal);
-		
-		//uint* itrBegin = fullHistograms + n * tree.th->numClasses;
-		//uint* itrEnd   = fullHistograms + (n+1) * tree.th->numClasses;	
-		//uint* itrMax = std::max_element(itrBegin,itrEnd);
-		
-		//cl.maxVal = *itrMax;
-		//cl.label = std::distance(itrBegin,itrMax);		
-		//printf("(%i,%i),(%i,%i)\n",(int)distVal,(int)maxVal,(int)cl.label,(int)cl.maxVal);
 	}
 
 	for (int n = 0; n < tree.th->totalHists; n++)
@@ -182,20 +435,15 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		CompactLeaf &cl = tree.compactLeaves[n];
 		for (int c = 0 ; c < tree.th->numClasses; c++)
 		{
-			//We compress the histogram into a byte so that the histograms dont take up too much space otherwise we would just do a memcpy here
-			// NOTE: this is almost certainly now an error if we are not taking into account scoreWeights.
-			//        the result will be an overflow for all the histogram bins which are larger than cl.maxVal
-			//        Must fix this this. However can still stay inside a byte. Does not need to be larger.
-			//        fixed line should probably be: uchar val = (1.0f/((float)scoreWeights[j]))*((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
-			uchar val = ((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
-			tree.histograms[n*tree.th->numClasses + c] = val;
+			float compressed = (1.0f/((float)scoreWeights[c]))*((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
+			tree.histograms[n*tree.th->numClasses + c] = compressed;
 		}
 	}
 
 
 	//Output label values
 	ushort * tmpLabels = new ushort[numSamples];
-	memset(tmpLabels,0,numSamples*sizeof(ushort));  //SampleType -> This needs to be changed to matc th eoutput label type
+	memset(tmpLabels,0,numSamples*sizeof(ushort));  //SampleType -> This needs to be changed to match eoutput label type
 
 	//Determine how many samples fall into a leaf where their label is maximum
 	uint numCorrect = 0;
@@ -261,12 +509,15 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 
 	std::ofstream ofs(treeName.c_str(), std::ios::binary);
 	ofs.write((char*)tree.treeAlloc, allocSize);
+	ofs.flush();
 	ofs.close();
 	delete[] correct;
 	delete[] total;
 	delete[] fullHistograms;
 	delete[] tree.treeAlloc;
 	FILE_LOG(LOG1) << "Full tree snapshot and self success timing in " << std::fixed << clk.toc() << "s";
+	std::cout<<"TREE NAME: "<< treeName<<std::endl;
+
 }
 
 void pushMapTasksData(int deviceId)
@@ -533,8 +784,8 @@ int runBuilder()
 
 			int workerId = ((GPUWorkerPool<Ftype>*)gpuWorkerPool)->acquireGPUWorker();
 
-			boost::thread task(&launchMapTask<Ftype>,d,workerId,featureToken);
-			//launchMapTask<Ftype>(d,workerId,featureToken);
+			//boost::thread task(&launchMapTask<Ftype>,d,workerId,featureToken);
+			launchMapTask<Ftype>(d,workerId,featureToken);
 
 			n++;
 		}
@@ -550,6 +801,19 @@ int runBuilder()
 
 		generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
 		//generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
+
+		testNumFeats = 28;
+		testNumSamples = 500000;
+		testDataPath = "/home/gipadmin/Downloads/Higgs/dataSingle/test_500000_28_single.data";
+		testLabelPath = "/home/gipadmin/Downloads/Higgs/dataSingle/test_500000_28_single.label";
+		
+		getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
+		if (numClasses==2)
+			getTreeAUC<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
+
+		//char* testLoad =  loadForest(,  maxDepth, treeNum, 1);
+		//getInfo(testLoad);
+		//delete testLoad;
 		
 		FILE_LOG(LOG0) << "Processed " << n << " tasks in " << std::fixed << clk.toc() << "s\n\n";
 	}
@@ -615,37 +879,40 @@ int main (int argc, char ** argv)
 
 		return 0;
 	}
-	else
-	{
-		FILE_LOG(logINFO) << "Using cmdline parameters:";		
-		numFeatures =	atoi(argv[1]);
-		poolSize =		std::min(numFeatures,atoi(argv[2]));
-		maxDepth =		atoi(argv[3]);
-		foldingDepth =  atoi(argv[4]);
-		maxNodes =		pow(2.0f, maxDepth + 1) - 1; 
 
-		if (std::string(argv[5]) == "F_CHAR")	featureType =	F_CHAR; else
-			if (std::string(argv[5]) == "F_SHORT")	featureType =	F_SHORT; else
-				if (std::string(argv[5]) == "F_INT")	featureType =	F_INT; else
-					if (std::string(argv[5]) == "F_FLOAT")	featureType =	F_FLOAT;
+	FILE_LOG(logINFO) << "Using cmdline parameters:";		
+	numFeatures =	atoi(argv[1]);
+	poolSize =		std::min(numFeatures,atoi(argv[2]));
+	maxDepth =		atoi(argv[3]);
+	foldingDepth =  atoi(argv[4]);
+	maxNodes =		pow(2.0f, maxDepth + 1) - 1; 
 
-		numSamples =	atoi(argv[6]);
-		numThresh =		atoi(argv[7]);		
-		startDevice =	atoi(argv[8]);
-		endDevice =		atoi(argv[9]);
+	if (std::string(argv[5]) == "F_CHAR")	featureType =	F_CHAR; 	else
+	if (std::string(argv[5]) == "F_SHORT")	featureType =	F_SHORT; 	else
+	if (std::string(argv[5]) == "F_INT")	featureType =	F_INT; 		else
+	if (std::string(argv[5]) == "F_FLOAT")	featureType =	F_FLOAT;
 
-		numDevices =	endDevice - startDevice + 1;
+	numSamples =	atoi(argv[6]);
+	numThresh =		atoi(argv[7]);		
+	startDevice =	atoi(argv[8]);
+	endDevice =		atoi(argv[9]);
 
-		if (std::string(argv[10]) == "W_ONES")	weightType = W_ONES; else
-			if (std::string(argv[10]) == "W_APRIORI")	weightType = W_APRIORI; else
-				if (std::string(argv[10]) == "W_FILE")	weightType = W_FILE; 
-		
-		numStreams =	1; //There seems to be no real advantage of using 2 streams and it seems to have a bug anyway. Could probably join gpuworker and gpudevice
+	numDevices =	endDevice - startDevice + 1;
 
-		baseDir		= std::string(argv[11]);
-		treePrefix	= std::string(argv[12]); 
-		treeNum  	= atoi(argv[13]); 
-	}
+	if (std::string(argv[10]) == "W_ONES")		weightType = W_ONES; 	else
+	if (std::string(argv[10]) == "W_APRIORI")	weightType = W_APRIORI; else
+	if (std::string(argv[10]) == "W_FILE")		weightType = W_FILE; 
+	
+	numStreams =	1; //There seems to be no real advantage of using 2 streams and it seems to have a bug anyway. Could probably join gpuworker and gpudevice
+
+	baseDir		= std::string(argv[11]);
+	treePrefix	= std::string(argv[12]); 
+	treeNum  	= atoi(argv[13]); 
+
+	//if (argc==19) // then we have a test set
+	//{	
+
+	//}
 
 
 	char tn[100];

@@ -43,6 +43,13 @@ a lot ...
 * Refactoring
 * Examples
 * Better logging
+* Regression
+* Boosting
+* Missing values
+* Forests
+* Preloaded GPU data pool
+* Best Delta node updates
+
 
 
 

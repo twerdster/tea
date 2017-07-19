@@ -95,7 +95,7 @@ __global__
 template <typename Ftype>
 void updateSamples(const Ftype* d_feature, GPUDevice *gpuDevice, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream)
 {
-	const float THREADS = 256; 
+	const float THREADS = 512; 
 	const float BLOCKS = ceil(gpuDevice->numSamples()/THREADS);
 	uint sqrtVal = ceil(sqrt(BLOCKS));        
 	dim3 numBlocks(sqrtVal,sqrtVal);
