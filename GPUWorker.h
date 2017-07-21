@@ -107,7 +107,7 @@ public:
 			float tDelta = (featureMax-eps - (featureMin+eps))/(float(numThresh) - 1.0f);
 
 			return (featureMin+eps) + tId*tDelta;	
-			//return (featureMin+eps) + rand()/(float)RAND_MAX*(numThresh-1)*tDelta;		
+			//return (featureMin+eps) + float(rand())/(float)RAND_MAX*(float(numThresh)-1.0)*tDelta;		
 		}
 		return  3.4e38f; // arbitrary. only happens when someone puts in no thresholds.
 	}
