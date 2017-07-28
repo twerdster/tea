@@ -178,10 +178,18 @@ for imageIndex = 1:nImages
     %% Write features for libSVM
      %write data and labels to data
      if createLibSVM
+     if ISFLOAT32
     for r=1:size(data,1)
         fprintf(flsvm,'%i',labels(r));
         fprintf(flsvm,' %i:%f', [classInds; data(r,:)]);
         fprintf(flsvm,'\n');
+    end
+    else
+    for r=1:size(data,1)
+        fprintf(flsvm,'%i',labels(r));
+        fprintf(flsvm,' %i:%i', [classInds; data(r,:)]);
+        fprintf(flsvm,'\n');
+    end
     end
     end
     
