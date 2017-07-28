@@ -208,16 +208,10 @@ template <class Ftype>
             //Find leaf node for tree t
             for (int d = 0; d <= maxDepth ; d++)
             {
-                /*if (numClasses==2 && !tree.histograms[leaf*th.numClasses] &&
-                 * !tree.histograms[leaf*th.numClasses+1]) // Then we have arrived at a dead leaf
-                 * {
-                 * printf("------------ DEAD LEAF------------\n");
-                 * break;
-                 * }*/
-                int fId = tree.nodes[leaf].F;
-                float feat = data[fId + m*numFeats];
                 int idxDepth = pow(2.0f,d)-1;
                 int leafIdx = leaf + idxDepth;
+                int fId = tree.nodes[leafIdx].F;
+                float feat = data[fId + m*numFeats];
                 
                 leaf = leaf*2 + uint(feat > tree.nodes[leafIdx].thr);
             }
@@ -349,17 +343,16 @@ template <class Ftype>
     
     // Perform inference and get the Results
     Results*  res = processExamples(forest, data, numFeats, numSamples, maxDepth);//, float* weights=0)
-    char buf[200];
-    sprintf(buf,"%shist_%04i.hist",treeBase.c_str(),treeNum);
-    char buf2[200];
-    sprintf(buf2,"%sleaf_%04i.leaves",treeBase.c_str(),treeNum);
-    
-    std::ofstream ofs(buf, std::ios::binary);
-    ofs.write((char*)res->histograms, sizeof(uint)*numSamples*tree.th->numClasses);
-    ofs.close();
-    std::ofstream ofs2(buf2, std::ios::binary);
-    ofs2.write((char*)res->leaves, sizeof(uint)*numSamples*fh.numTrees);
-    ofs2.close();
+    // char buf[200];
+    // sprintf(buf,"%shist_%04i.hist",treeBase.c_str(),treeNum);
+    // char buf2[200];
+    // sprintf(buf2,"%sleaf_%04i.leaves",treeBase.c_str(),treeNum);
+    // std::ofstream ofs(buf, std::ios::binary);
+    // ofs.write((char*)res->histograms, sizeof(uint)*numSamples*tree.th->numClasses);
+    // ofs.close();
+    // std::ofstream ofs2(buf2, std::ios::binary);
+    // ofs2.write((char*)res->leaves, sizeof(uint)*numSamples*fh.numTrees);
+    // ofs2.close();
     // load labels
     ushort *labelList = new ushort[numSamples];
     readList<ushort>(labelList, numSamples, labelPath);
@@ -475,6 +468,8 @@ void generateTreeFromBuildState(int depth, std::string treeName)
     printf("totalHists: %i\n",totalHists);
     printf("numClasses: %i\n",numClasses);
     
+
+    //---------------------------------------
     //regenerate the full histogram from all the samples
     for (int nIdx = 0; nIdx < numNodes;  nIdx++)
     {
@@ -490,11 +485,11 @@ void generateTreeFromBuildState(int depth, std::string treeName)
             }
         }
     }
-    //printf("Press to continue\n");
-//getchar();
-    std::ofstream ofsFull((treeName+".fullhist").c_str(), std::ios::binary);
-    ofsFull.write((char*)fullHistograms, totalHists*numClasses*sizeof(uint));
-    ofsFull.close();
+
+
+    //std::ofstream ofsFull((treeName+".fullhist").c_str(), std::ios::binary);
+    //ofsFull.write((char*)fullHistograms, totalHists*numClasses*sizeof(uint));
+    //ofsFull.close();
     
     tree.th->depth = depth;
     tree.th->numClasses = numClasses;
@@ -932,15 +927,21 @@ template <class Ftype>
         // Extract histograms for this level
         //saveCurrentTree(); including coords, nodes and extracted histograms from samples;
         
-        generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
-        //generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
+        //generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
+        //generateSampleTrajectoriesFromBuildState(d, (baseDir + "LeavesGEN" + treeName + ".tlbl"));
+        
+        // testNumFeats = 100;
+        // testNumSamples = 1551458;
+        // testDataPath = "/home/twerd/forks/tea/data/Test_300/teaData.out";
+        // testLabelPath = "/home/twerd/forks/tea/data/Test_300/teaLabel.out";
         
         testNumFeats = 100;
         testNumSamples = 1551458;
         testDataPath = "/home/twerd/forks/tea/data/Test_300/teaData.out";
         testLabelPath = "/home/twerd/forks/tea/data/Test_300/teaLabel.out";
         
-        getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
+
+        //getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
         //if (numClasses==2)
         //	getTreeAUC<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
         
