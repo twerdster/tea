@@ -364,6 +364,12 @@ template <class Ftype>
     ushort *labelList = new ushort[numSamples];
     readList<ushort>(labelList, numSamples, labelPath);
     
+    std::vector<double> classLoss;
+    std::vector<double> classCount;
+
+    classLoss.resize(tree.th->numClasses);
+    classCount.resize(tree.th->numClasses);
+
     int correct=0;
     for (int i=0; i < numSamples; ++i)
     {
@@ -375,8 +381,15 @@ template <class Ftype>
             if (val>maxVal) {maxVal=val; ind=c;}
         }
         correct+=(int(labelList[i])==ind);
+        classLoss[labelList[i] ] += (int(labelList[i])!=ind);
+          classCount[labelList[i]]++;
     }
+
     FILE_LOG(LOG0) << "TEST Accuracy : " << float(correct)/float(numSamples);
+    for (int i = 0; i <  tree.th->numClasses; ++i)
+    {
+      printf("%i (%.2f): %.2f\n",i,classCount[i]/numSamples*100,100-classLoss[i]/classCount[i]*100);
+    }
     
     if (tree.th->numClasses == 2)
     {
@@ -922,10 +935,10 @@ template <class Ftype>
         generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
         //generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
         
-        testNumFeats = 28;
-        testNumSamples = 500000;
-        testDataPath = "/home/gipadmin/Downloads/Higgs/dataSingle/test_500000_28_single.data";
-        testLabelPath = "/home/gipadmin/Downloads/Higgs/dataSingle/test_500000_28_single.label";
+        testNumFeats = 100;
+        testNumSamples = 1551458;
+        testDataPath = "/home/twerd/forks/tea/data/Test_300/teaData.out";
+        testLabelPath = "/home/twerd/forks/tea/data/Test_300/teaLabel.out";
         
         getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
         //if (numClasses==2)
