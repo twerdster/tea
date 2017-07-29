@@ -570,7 +570,7 @@ void generateTreeFromBuildState(int depth, std::string treeName)
                 correct[label]++;
             }
             total[label]++;
-            confusion[tree.compactLeaves[traj].label + label*numClasses]++; //Standard format from wiki: Each row is the true label, each column along a row is the prediction
+            confusion[predlabel + label*numClasses]++; //Standard format from wiki: Each row is the true label, each column along a row is the prediction
         }
     }
     
@@ -927,7 +927,7 @@ template <class Ftype>
         // Extract histograms for this level
         //saveCurrentTree(); including coords, nodes and extracted histograms from samples;
         
-        //generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
+        generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
         //generateSampleTrajectoriesFromBuildState(d, (baseDir + "LeavesGEN" + treeName + ".tlbl"));
         
         // testNumFeats = 100;
@@ -941,7 +941,7 @@ template <class Ftype>
         testLabelPath = "/home/twerd/forks/tea/data/Test_300/teaLabel.out";
         
 
-        //getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
+        getTreeAccuracy<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
         //if (numClasses==2)
         //	getTreeAUC<Ftype>(baseDir + "Tree",  d, treeNum, testDataPath, testLabelPath, testNumFeats, testNumSamples);
         
