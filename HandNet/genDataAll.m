@@ -22,7 +22,7 @@ if nImages == 0
 end
 %h = waitbar(0,'Calculating total number of samples ...');
 
-for i=1:100:nImages
+for i=1:nImages
     load([dataDir dirInfo(i).name]);
     %depth = Depth;
     totSamples = totSamples + sampleRate*sum(lbl(:)>=1);
@@ -36,7 +36,7 @@ for i=1:100:nImages
     end
     %waitbar(i/nImages,h);
 end
-totSamples = totSamples*100;
+totSamples = totSamples;
 
 fprintf('TotalSamples : %i\n\n',totSamples);
 %delete(h);
@@ -102,16 +102,20 @@ delete(teaBinaryDataFile);
 delete(teaBinaryLabelFile);
 delete([outDir '*.feat']);
 
-fLabel     = fopen(teaLabelFile,'wb');
-fTeaData   = fopen(teaBinaryDataFile,'wb');
-fTeaLabel  = fopen(teaBinaryLabelFile,'wb');
-flsvm      = fopen(lsvmFile,'wt');
+fLabel     = fopen(teaLabelFile,'ab');
+fTeaData   = fopen(teaBinaryDataFile,'ab');
+fTeaLabel  = fopen(teaBinaryLabelFile,'ab');
+flsvm      = fopen(lsvmFile,'at');
 
 featSize=totSamples*sizeof(featurePrecision);
 soloFeatSize = featSize*nFeatures;
 
-%system(['head -c ' num2str(soloFeatSize) ' </dev/zero >' teaBinaryDataFile]);
-      
+if createTeaSolo
+system(['head -c ' num2str(soloFeatSize) ' </dev/zero >' teaBinaryDataFile]);
+system(['head -c ' num2str(totSamples*2) ' </dev/zero >' teaBinaryLabelFile]);
+
+end
+
 fMin = [];
 fMax = [];
 imCnt=0;
@@ -119,7 +123,7 @@ fileHandles = [];
 if createTeaMulti
 for feat = 1:nFeatures
     featFile = [outDir fBase num2str(feat-1,'%.4i') '.feat'];
-%    system(['head -c ' num2str(featSize) ' </dev/zero >' featFile]);
+    system(['head -c ' num2str(featSize) ' </dev/zero >' featFile]);
     fileHandles(feat) = fopen(featFile,'wb');
     fMin(feat) = featureMax;
     fMax(feat) = -featureMax;
@@ -205,11 +209,11 @@ for imageIndex = 1:nImages
             drawnow;
         end
         
-        imshow(depth,[]);
-        hold on;
-        plot(j,i,'r.','MarkerSize',1);
-        hold off;
-        drawnow;
+        %imshow(depth,[]);
+        %hold on;
+        %plot(j,i,'r.','MarkerSize',1);
+        %hold off;
+        %drawnow;
     end
     
 end
