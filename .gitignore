@@ -13,3 +13,4 @@ Testing/
 .codex
 __pycache__/
 *.pyc
+site/

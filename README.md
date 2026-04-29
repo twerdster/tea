@@ -1,6 +1,10 @@
 # Tea
 
-Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datasets. It was originally built as a research codebase for multi-GPU tree training, and this repository now includes:
+[![CUDA](https://img.shields.io/badge/CUDA-NVIDIA-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
+[![C++11](https://img.shields.io/badge/C%2B%2B-11-00599C?logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
+[![CMake](https://img.shields.io/badge/CMake-supported-064F8C?logo=cmake&logoColor=white)](https://cmake.org/)
+
+Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datasets. It was used for large-scale training in the BMVC 2015 paper [*Rule Of Thumb: Deep derotation for improved fingertip detection*](https://arxiv.org/abs/1507.05726) by Aaron Wetzler, Ron Slossberg, and Ron Kimmel. This repository now includes:
 
 - a modernized host-side threading layer based on the C++ standard library
 - a supported local build flow with both `make` and CMake
@@ -8,7 +12,31 @@ Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datas
 - small generated example datasets and copy-pasteable example commands
 - a Python dataset expansion utility instead of the old MATLAB helper
 
-The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Deeper benchmark scripts from the original project are still present, but they are treated as legacy performance assets rather than the primary test surface.
+The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Historical MATLAB benchmark tooling has been replaced by maintained Python-based testing and benchmarking utilities.
+
+## Documentation
+
+The repository now includes a multi-page documentation site under `docs/`, built with MkDocs.
+
+Install the docs dependencies:
+
+```bash
+python3 -m pip install -r requirements-docs.txt
+```
+
+Serve the site locally:
+
+```bash
+bash scripts/serve_docs.sh
+```
+
+Build the static site:
+
+```bash
+bash scripts/build_docs.sh
+```
+
+The GitHub Pages workflow is defined in `.github/workflows/docs.yml`.
 
 ## Repository Status
 

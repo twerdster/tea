@@ -1,0 +1,48 @@
+:root {
+  --tea-hero-bg: linear-gradient(135deg, rgba(18, 84, 77, 0.08), rgba(151, 191, 71, 0.16));
+  --tea-border: rgba(18, 84, 77, 0.18);
+}
+
+.md-typeset h1 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset h2 {
+  margin-top: 2.25rem;
+}
+
+.md-typeset code {
+  border-radius: 0.25rem;
+}
+
+.md-main__inner {
+  margin-top: 1.2rem;
+}
+
+.md-content__inner > h1:first-child,
+.md-content__inner > p:first-of-type {
+  position: relative;
+  z-index: 1;
+}
+
+.md-content__inner > h1:first-child::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: -1.2rem -1rem -1.2rem -1rem;
+  background: var(--tea-hero-bg);
+  border: 1px solid var(--tea-border);
+  border-radius: 1rem;
+  z-index: -1;
+}
+
+.md-typeset table:not([class]) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0.75rem;
+}

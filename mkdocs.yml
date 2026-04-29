@@ -1,0 +1,44 @@
+site_name: Tea
+site_description: Multi-GPU randomized decision-tree training for very large precomputed feature datasets
+site_url: https://twerdster.github.io/tea/
+repo_url: https://github.com/twerdster/tea
+repo_name: twerdster/tea
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - scheme: default
+      primary: teal
+      accent: lime
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Overview: index.md
+  - Getting Started: getting-started.md
+  - Training Workflow: training-workflow.md
+  - Dataset Format: dataset-format.md
+  - CLI and Outputs: cli-and-outputs.md
+  - Testing: testing.md
+  - Benchmarking: benchmarking.md
+  - HandNet: handnet.md
+  - References: references.md
+  - Maintaining This Site: docs-site.md
