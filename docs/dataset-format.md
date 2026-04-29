@@ -75,7 +75,7 @@ These are the fastest reference examples for understanding the on-disk layout.
 
 ## Expand Or Inspect A Dataset
 
-Tea now includes a Python dataset utility that replaces the old MATLAB helper.
+Tea includes a Python dataset utility for quick inspection and synthetic expansion.
 
 Inspect a dataset:
 
@@ -95,3 +95,19 @@ The utility can:
 - change the stored feature datatype
 - repeat feature columns to a new feature count
 - derive new label distributions for benchmarking experiments
+
+## Convert HandNet Data
+
+For restored HandNet `Data_*.mat` archives, use the maintained Python converter:
+
+```bash
+python3 scripts/handnet_to_tea.py \
+  --archive /path/to/ValidationData.zip \
+  --output /tmp/tea-handnet-validation \
+  --features 200 \
+  --feature-type F_CHAR \
+  --samples-per-frame 2000 \
+  --force
+```
+
+See [HandNet](handnet.md) for the full workflow.

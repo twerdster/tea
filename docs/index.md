@@ -43,7 +43,7 @@ The maintained path in this repository is:
 
 - build with `make` or CMake
 - verify the binary with shallow smoke tests
-- use the Python dataset utilities for examples and benchmarking
+- use the Python dataset utilities for examples, benchmarking, and HandNet conversion
 
 The repository does not claim full regression coverage for all historical deep-tree workloads. The supported automated verification surface currently focuses on shallow correctness and bounded benchmark runs.
 
@@ -57,3 +57,5 @@ If you are new to Tea, read these pages in order:
 4. [CLI and Outputs](cli-and-outputs.md)
 
 If you want to measure performance, go to [Benchmarking](benchmarking.md).
+
+If you want to use restored HandNet data, go to [HandNet](handnet.md).

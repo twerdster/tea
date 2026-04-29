@@ -185,7 +185,7 @@ def inspect_dataset(args):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Inspect or expand a Tea dataset without MATLAB.")
+    parser = argparse.ArgumentParser(description="Inspect or expand a Tea dataset.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     inspect_parser = subparsers.add_parser("inspect", help="Print detected dataset dimensions.")

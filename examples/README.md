@@ -55,11 +55,51 @@ Inspect an existing Tea dataset:
 python3 scripts/expand_dataset.py inspect /path/to/data single
 ```
 
-Write a derived dataset without MATLAB:
+Write a derived dataset:
 
 ```bash
 python3 scripts/expand_dataset.py expand /path/to/data single /tmp/tea-expanded 1000 200 7 single
 ```
+
+## Convert HandNet Data
+
+Install the converter dependencies:
+
+```bash
+python3 -m pip install -r requirements-tools.txt
+```
+
+Convert a HandNet archive:
+
+```bash
+python3 scripts/handnet_to_tea.py \
+  --archive /path/to/ValidationData.zip \
+  --output /tmp/tea-handnet-validation \
+  --features 200 \
+  --feature-type F_CHAR \
+  --samples-per-frame 2000 \
+  --force
+```
+
+Check the estimated memory for a depth-3 run:
+
+```bash
+python3 scripts/estimate_training_memory.py \
+  --dataset /tmp/tea-handnet-validation \
+  --max-depth 3 \
+  --folding-depth 3 \
+  --feature-type F_CHAR \
+  --vram-cap-mb 500 \
+  --require-fit
+```
+
+Run the converter smoke test:
+
+```bash
+make handnet-smoke
+```
+
+For larger `TrainData.rar` experiments, extract a bounded file list first and convert the extracted directory. See `docs/handnet.md` for a 10,000-frame depth-8 example.
 
 ## Benchmark Tea
 

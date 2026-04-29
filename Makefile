@@ -17,10 +17,14 @@ build/%.o: %.cu
 smoke: Tea
 	${PYTHON} tests/run_smoke_tests.py --tea ./Tea
 
+handnet-smoke: Tea
+	${PYTHON} tests/run_handnet_converter_test.py --tea ./Tea
+
 help:
 	@echo "Targets:"
 	@echo "  make Tea                 Build the Tea binary"
 	@echo "  make smoke               Run the depth-0 and depth-1 smoke tests"
+	@echo "  make handnet-smoke       Run the Python HandNet converter smoke test"
 	@echo ""
 	@echo "Variables:"
 	@echo "  NVCC=<path>              CUDA compiler to use"
@@ -30,4 +34,4 @@ help:
 clean:
 	rm -f build/*.o Tea
 
-.PHONY: Tea clean smoke help
+.PHONY: Tea clean smoke handnet-smoke help

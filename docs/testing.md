@@ -1,6 +1,6 @@
 # Testing
 
-Tea now has a real Python-driven smoke-test surface instead of the old MATLAB benchmark lists.
+Tea has a Python-driven smoke-test surface for the maintained build and data paths.
 
 ## Supported Tests
 
@@ -12,10 +12,12 @@ Current maintained cases:
 
 - `root-depth0`
 - `depth1-balanced`
+- `handnet-smoke`
 
 These are generated on the fly by:
 
 - `tests/gen_smoke_dataset.py`
+- `tests/run_handnet_converter_test.py`
 
 ## What The Smoke Tests Verify
 
@@ -29,6 +31,13 @@ Each smoke case checks:
 
 That gives you a fast correctness check for the maintained shallow path.
 
+The HandNet converter smoke test additionally checks:
+
+- a synthetic HandNet-style `.zip` can be converted through the Python path
+- the generated Tea files have the expected sizes and zero-based labels
+- the memory estimator accepts the generated dataset under a 500 MB cap
+- Tea can train on the converted data
+
 ## Run The Full Smoke Suite
 
 ```bash
@@ -39,6 +48,12 @@ Or:
 
 ```bash
 python3 tests/run_smoke_tests.py --tea ./Tea
+```
+
+Run the HandNet converter smoke test:
+
+```bash
+make handnet-smoke
 ```
 
 ## Run A Single Case

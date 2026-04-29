@@ -87,6 +87,13 @@ The smoke suite currently covers:
 
 These are deliberately small and fast. They are intended to prove that the maintained build and runtime path is alive, not to exhaustively validate every historical training regime.
 
+If you plan to use HandNet conversion, install the extra Python tooling and run its converter smoke test:
+
+```bash
+python3 -m pip install -r requirements-tools.txt
+make handnet-smoke
+```
+
 ## Build The Documentation Site
 
 Install docs dependencies:

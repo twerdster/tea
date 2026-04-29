@@ -76,6 +76,6 @@ Tea is an older research codebase. The repository now has a clean maintained pat
 
 - very deep trees
 - large historical benchmark configurations that were never part of modern CI
-- legacy preprocessing workflows such as `HandNet/`
+- application-level evaluation beyond the current smoke and converter tests
 
 For supported verification, stay close to the testing and benchmarking flows documented in this site.

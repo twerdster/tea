@@ -55,9 +55,19 @@ python3 tests/gen_smoke_dataset.py /tmp/tea-smoke-depth1 --scenario depth1
 
 ## Related Utility
 
-To derive a larger dataset from an existing Tea dataset without MATLAB, use:
+To derive a larger dataset from an existing Tea dataset, use:
 
 ```bash
 python3 scripts/expand_dataset.py inspect /path/to/data single
 python3 scripts/expand_dataset.py expand /path/to/data single /tmp/tea-expanded 1000 200 7 single
 ```
+
+## HandNet Converter Smoke Test
+
+The HandNet converter has a separate no-data smoke test:
+
+```bash
+make handnet-smoke
+```
+
+It creates a synthetic HandNet-style `.zip`, converts it with `scripts/handnet_to_tea.py`, checks the generated Tea files, estimates memory under a 500 MB cap, and runs Tea on the converted dataset.

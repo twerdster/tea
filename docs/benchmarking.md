@@ -31,6 +31,18 @@ Default:
 
 This is useful when you want bounded experiments on a busy GPU or a conservative shared machine.
 
+For existing Tea datasets, use the standalone estimator:
+
+```bash
+python3 scripts/estimate_training_memory.py \
+  --dataset /tmp/tea-handnet-validation \
+  --max-depth 3 \
+  --folding-depth 3 \
+  --feature-type F_CHAR \
+  --vram-cap-mb 500 \
+  --require-fit
+```
+
 ## Example Sweep
 
 ```bash

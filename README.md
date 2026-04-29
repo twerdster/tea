@@ -10,9 +10,9 @@ Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datas
 - a supported local build flow with both `make` and CMake
 - shallow automated smoke tests for depth `0` and depth `1`
 - small generated example datasets and copy-pasteable example commands
-- a Python dataset expansion utility instead of the old MATLAB helper
+- Python dataset utilities for expansion, benchmarking, memory estimation, and HandNet conversion
 
-The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Historical MATLAB benchmark tooling has been replaced by maintained Python-based testing and benchmarking utilities.
+The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Historical MATLAB tooling has been replaced by maintained Python-based testing, benchmarking, and HandNet conversion utilities.
 
 ## Documentation
 
@@ -58,6 +58,7 @@ You need:
 - Python 3
 - a C++11-capable host compiler
 - CMake if you want the CMake-based build path
+- NumPy and SciPy if you want to run the HandNet converter
 
 OpenMP is optional. If it is available, Tea uses it for a small amount of host-side parallel work. If it is not available, the code still builds.
 
@@ -187,9 +188,53 @@ The runner checks:
 
 More detail is in [tests/README.md](/home/aaron/repos/tea/tests/README.md).
 
+## HandNet Conversion
+
+The useful HandNet MATLAB/MEX preprocessing path has been ported to [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py).
+
+Install the converter dependencies:
+
+```bash
+python3 -m pip install -r requirements-tools.txt
+```
+
+Convert a HandNet archive into Tea format:
+
+```bash
+python3 scripts/handnet_to_tea.py \
+  --archive /path/to/ValidationData.zip \
+  --output /tmp/tea-handnet-validation \
+  --features 200 \
+  --feature-type F_CHAR \
+  --samples-per-frame 2000 \
+  --force
+```
+
+For large `TrainData.rar` slices, extract the selected `Data_*.mat` files once with `bsdtar -T` and pass the extracted `TrainData/` directory to the converter. That is much faster than repeatedly reading individual files from the RAR archive. A documented depth-8 TrainData slice workflow is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+
+Estimate depth-3 training memory before running Tea:
+
+```bash
+python3 scripts/estimate_training_memory.py \
+  --dataset /tmp/tea-handnet-validation \
+  --max-depth 3 \
+  --folding-depth 3 \
+  --feature-type F_CHAR \
+  --vram-cap-mb 500 \
+  --require-fit
+```
+
+Run the maintained no-data converter smoke test:
+
+```bash
+make handnet-smoke
+```
+
+More detail is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+
 ## Dataset Utility
 
-The old MATLAB dataset-expansion helper has been replaced by [scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py).
+[scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
 
 Inspect an existing dataset:
 
@@ -306,8 +351,14 @@ Note that Tea snapshots the tree after each level and rewrites the same output f
   Manual example commands
 - [scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py)
   Dataset inspection and expansion helper
+- [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py)
+  HandNet `.mat` archive converter
+- [scripts/estimate_training_memory.py](/home/aaron/repos/tea/scripts/estimate_training_memory.py)
+  Standalone Tea GPU-memory estimator for existing datasets
 - [scripts/benchmark.py](/home/aaron/repos/tea/scripts/benchmark.py)
   Synthetic benchmark runner with a configurable VRAM cap
+- [HandNet/README.md](/home/aaron/repos/tea/HandNet/README.md)
+  HandNet conversion notes; the old MATLAB/MEX files are no longer maintained
 
 ## Recommended Path
 
@@ -315,7 +366,8 @@ If you are starting fresh, use:
 
 1. `make Tea` or `bash scripts/build.sh`
 2. `make smoke`
-3. the examples in [examples/README.md](/home/aaron/repos/tea/examples/README.md)
+3. `make handnet-smoke` if you plan to use HandNet data
+4. the examples in [examples/README.md](/home/aaron/repos/tea/examples/README.md)
 
 ## Troubleshooting
 
@@ -343,6 +395,7 @@ The repository is now organized around:
 
 - clean builds on a modern toolchain
 - supported shallow smoke tests
+- maintained Python HandNet conversion
 - clear examples and setup
 
 The next layers of work after that are deeper regression coverage and longer legacy benchmark validation, but those are intentionally separate from the current easy-to-use path.
