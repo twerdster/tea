@@ -5,9 +5,11 @@
 #include "kernels.h"
 #include "Clock.h"
 #include "log.h"
+#include "system_utils.h"
 #include <algorithm>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <sstream>
 
 
 template <class Ftype>
@@ -24,7 +26,7 @@ private:
 	HistType _htype;
 	uint* _indexBuffer;
 	Ftype* _dataBuffer;
-	char _logStr[2048], _logHdr[2048];
+	std::string _logHdr;
 
 public:
 	//std::stringstream outStr;
@@ -54,7 +56,7 @@ public:
 		{
 			FILE_LOG(logERROR) << "Could not allocate worker memory on gpuDevice: "<< gpuDevice->deviceId();
 			FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-			system("pause");
+			discardSystemResult("pause");
 		}
 		cudaMalloc( &_indexBuffer, indexBufMem);
 		cudaMalloc( &_dataBuffer, dataBufMem);
@@ -62,7 +64,9 @@ public:
 
 	inline void setWorkerHeading(int workerId, int fId)
 	{
-		sprintf(_logHdr,"wId: %i, fId: %i, ",  workerId, fId);
+		std::ostringstream os;
+		os << "wId: " << workerId << ", fId: " << fId << ", ";
+		_logHdr = os.str();
 	}
 
 	void sendData(const Ftype* h_data, const uint* index)
@@ -85,7 +89,7 @@ public:
 		{ 
 			FILE_LOG(logERROR) << _logHdr << "Error in sending data to gpuDevice: " <<_gpuDevice->deviceId();
 			FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-			system("pause");	
+			discardSystemResult("pause");	
 		}
 		FILE_LOG(LOG2) << _logHdr << " Sending data: " << clk.toc() << "s"; 
 	}
@@ -139,13 +143,14 @@ public:
 		int delta = numNodes / ceil(pow(2.0, depth - foldingDepth));		
 		int numClasses = _gpuDevice->numClasses();
 		
-		sprintf(_logStr,"%s Speed probe ratio:",_logHdr);		
+		std::ostringstream log;
+		log << _logHdr << "Speed probe ratio:";		
 
 		if (numClasses > 256) {
 			_htype = HIST_REGULAR;
 			_noProbe = true;
-			sprintf(_logStr,"%s numClasses>256. Using HIST_REGULAR",_logStr);
-			FILE_LOG(LOG2) << _logStr;
+			log << " numClasses>256. Using HIST_REGULAR";
+			FILE_LOG(LOG2) << log.str();
 			return;
 		}
 		
@@ -162,22 +167,22 @@ public:
 
 		if (t2/t1 > 1.1)
 		{
-			if (numClasses <=64)	{ _htype = HIST_64;  sprintf(_logStr,"%s %.3f . Using HIST_64", _logStr, t2/t1);  }
-			else					{ _htype = HIST_256; sprintf(_logStr,"%s %.3f . Using HIST_256", _logStr, t2/t1); }
+			if (numClasses <=64)	{ _htype = HIST_64;  log << " " << t2/t1 << " . Using HIST_64";  }
+			else					{ _htype = HIST_256; log << " " << t2/t1 << " . Using HIST_256"; }
 		}
 		else
 		{
-			_htype = HIST_REGULAR;	sprintf(_logStr,"%s %.3f . Using HIST_REGULAR", _logStr, t2/t1);
+			_htype = HIST_REGULAR;	log << " " << t2/t1 << " . Using HIST_REGULAR";
 			_noProbe = true;
 		}
-		FILE_LOG(LOG2) << _logStr;
+		FILE_LOG(LOG2) << log.str();
 	}
 
 
 	void map(int depth, int fId, int numThresh, std::vector<float> & thresh, RFTrainNode * nodes)
 	{		
 		//We need to lock the cpu thread so that no more requests are added to any of the streams 
-		boost::mutex::scoped_lock lock(*_gpuDevice->getMutex());
+		std::lock_guard<std::mutex> lock(*_gpuDevice->getMutex());
 		_gpuDevice->setCurrent();
 		Clock clk;		
 		float t1,t2;
@@ -221,8 +226,10 @@ public:
 				t2+=clk.toc();
 			}			
 			
-			sprintf(_logStr, "%s, Nodes:(%i -> %i), Hist(s):%.4f, Hist/Ent:%.2f",_logHdr, nodeBegin, nodeEnd, t1/numThresh,t1/t2);
-			FILE_LOG(LOG2) << _logStr;
+			std::ostringstream log;
+			log << _logHdr << "Nodes:(" << nodeBegin << " -> " << nodeEnd << "), Hist(s):"
+				<< t1/numThresh << ", Hist/Ent:" << t1/t2;
+			FILE_LOG(LOG2) << log.str();
 		}
 
 		// Here we want to go through all the samples and for the ones whos node has been updated we want to update its bestTraj 

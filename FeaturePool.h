@@ -2,9 +2,13 @@
 #define _FEATURE_POOL
 
 #include <assert.h>
-#include <boost/thread.hpp>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <queue>
+#include <thread>
 #include <vector>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <stdlib.h>     /* getenv */
@@ -12,6 +16,7 @@
 #include "AtomicQueue.h"
 #include "Feature.h"
 #include "defines.h"
+#include "system_utils.h"
 
 //class FeaturePoolBase {};
 
@@ -31,12 +36,14 @@ private:
 
 	bool _needsReset;
 	bool _loaderEnabled;
+	std::atomic<bool> _stopLoader;
+	std::thread _loaderThread;
 
-	mutable boost::mutex _queueMutex;
+	mutable std::mutex _queueMutex;
 
 	// These are used for load thread dispatches
-	mutable boost::mutex _loadMutex;
-	boost::condition_variable _loadConditionVar;
+	mutable std::mutex _loadMutex;
+	std::condition_variable _loadConditionVar;
 	int _loadCount, _totalLoaded;
 
 
@@ -48,6 +55,7 @@ public:
 	  {
 		  assert(numFeatures >= poolSize && numFeatures && poolSize);
 		  _loaderEnabled = (numFeatures != poolSize); 
+		  _stopLoader = false;
 		  _needsReset = false;
 		  _loadCount = 0;
 		  _totalLoaded = 0;
@@ -84,9 +92,8 @@ public:
 		  //incorrectly
 		  _waitForLoads();
 
-		  // Launch the loader thread. This will exit immediately if the loader is disabled.
-		  //We will need some way to ensure that all threads have stopped before using a destructor
-		  boost::thread loaderThread(&FeaturePool<Ftype>::_featureLoader,this);
+		  if (_loaderEnabled)
+			  _loaderThread = std::thread(&FeaturePool<Ftype>::_featureLoader, this);
 	  }
 
 	  Feature<Ftype>* getFeature(int token)  {	return &_pool[token];  }
@@ -100,7 +107,7 @@ public:
 		  // function returning a NULL value
 		  {
 			  //We lock this so that access to the list and _totalLoaded is atomic
-			  boost::mutex::scoped_lock lock(_queueMutex);
+			  std::lock_guard<std::mutex> lock(_queueMutex);
 			  if ((_totalLoaded == _numFeatures || !_loaderEnabled) && _processingQueue->empty()  ) 
 			  {
 				  _reset();
@@ -127,6 +134,12 @@ public:
 	  //Shuts the featureLoader thread down and releases all resources.
 	  ~FeaturePool()
 	  {
+		  _stopLoader = true;
+		  if (_loaderThread.joinable())
+		  {
+			  _availableQueue.push(-1);
+			  _loaderThread.join();
+		  }
 		  _waitForLoads();
 		  // These all need to be propperly destructed. Its not critical atm because FeaturePool should only
 		  //be released at the very end of the program
@@ -163,13 +176,13 @@ private:
 
 	void _loadAcquire()
 	{
-		boost::mutex::scoped_lock lock(_loadMutex);
+		std::lock_guard<std::mutex> lock(_loadMutex);
 		_loadCount++;
 	}
 
 	void _loadRelease()
 	{
-		boost::mutex::scoped_lock lock(_loadMutex);
+		std::lock_guard<std::mutex> lock(_loadMutex);
 		_loadCount--;
 		assert(_loadCount>=0);
 
@@ -179,7 +192,7 @@ private:
 
 	void _waitForLoads()
 	{
-		boost::mutex::scoped_lock lock(_loadMutex);
+		std::unique_lock<std::mutex> lock(_loadMutex);
 
 		while (_loadCount) 
 			_loadConditionVar.wait(lock);
@@ -194,7 +207,7 @@ private:
 
 		// Add the newly loaded feature as being available or put it on the waiting list
 		// The lock is to ensure that the correct list will be updated without corruption if reset is called
-		boost::mutex::scoped_lock lock(_queueMutex); 
+		std::lock_guard<std::mutex> lock(_queueMutex); 
 
 		if (_totalLoaded < _numFeatures) 
 		{			
@@ -219,7 +232,7 @@ private:
 	void _featureLoader()
 	{
 		Clock clk;
-		while (_loaderEnabled) 
+		while (!_stopLoader) 
 		{
 
 			clk.tic();
@@ -227,7 +240,7 @@ private:
 			if (dropCacheStr && strcmp(dropCacheStr, "1") == 0)
 			{
 				FILE_LOG(LOG2) << " ---- NB : attempting to drop disk buffer/cache (sudo required) ... " ;
-			 	system("echo 3 | tee /proc/sys/vm/drop_caches");
+			 	discardSystemResult("echo 3 | tee /proc/sys/vm/drop_caches");
 			}
 
 			// Run through all the features 
@@ -236,6 +249,8 @@ private:
 				// Get the token representing the currently available spot for loading data into
 				int token;
 				_availableQueue.wait_and_pop(token);
+				if (_stopLoader)
+					return;
 
 				loadThread(token,fId);				
 			}

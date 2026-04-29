@@ -2,7 +2,8 @@
 #define _GPUWORKER_POOL
 
 #include <assert.h>
-#include <boost/thread.hpp>
+#include <condition_variable>
+#include <mutex>
 #include <queue>
 #include <vector>
 #include "AtomicQueue.h"
@@ -24,11 +25,11 @@ private:
 	std::vector<GPUWorker<Ftype> > _pool;
 	std::vector<GPUDevice> *_gpuDevice;
 
-	mutable boost::mutex _listMutex;
+	mutable std::mutex _listMutex;
 
 	// These are used for load thread dispatches
-	mutable boost::mutex _aquireMutex;
-	boost::condition_variable _acquireConditionVar;
+	mutable std::mutex _aquireMutex;
+	std::condition_variable _acquireConditionVar;
 	int _acquireCount;
 
 public:
@@ -65,7 +66,7 @@ public:
 	{
 		{
 			//We need to protect against the possibility that a release is done as we increase the acquirecount
-			boost::mutex::scoped_lock lock(_aquireMutex);
+			std::lock_guard<std::mutex> lock(_aquireMutex);
 			_acquireCount++;
 		}
 
@@ -79,7 +80,7 @@ public:
 	void releaseGPUWorker(int workerId)
 	{
 		{
-			boost::mutex::scoped_lock lock(_aquireMutex);
+			std::lock_guard<std::mutex> lock(_aquireMutex);
 			_acquireCount--;
 			assert(_acquireCount>=0);		
 
@@ -91,7 +92,7 @@ public:
 
 	void waitForGPUWorkers()
 	{
-		boost::mutex::scoped_lock lock(_aquireMutex);
+		std::unique_lock<std::mutex> lock(_aquireMutex);
 
 		while (_acquireCount) 
 			_acquireConditionVar.wait(lock);

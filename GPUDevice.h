@@ -2,13 +2,14 @@
 #define _GPU_DEVICE
 
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <boost/thread.hpp>
 #include "log.h"
 #include "defines.h"
 #include "kernels.h"
+#include "system_utils.h"
 
 
 class GPUDevice
@@ -21,7 +22,7 @@ private:
 	int _numSamples;
 	int _foldingDepth;
 	int _histBytes;
-	mutable boost::mutex *_deviceMutex;
+	mutable std::mutex *_deviceMutex;
 	bool _aNeedsCalculating;
 	bool _isValid;
 	WeightType _weightType;
@@ -46,7 +47,7 @@ public:
 		_numClasses = numClasses;
 		_numSamples = numSamples;
 		_foldingDepth = foldingDepth;
-		_deviceMutex = new boost::mutex();
+		_deviceMutex = new std::mutex();
 		_histBytes = 2*numClasses*pow(2.0,foldingDepth)*sizeof(uint);
 		_aNeedsCalculating = true;
 		_isValid = true;
@@ -83,7 +84,7 @@ public:
 		{
 			FILE_LOG(logERROR) << "Found CUDA device [" << deviceProps.name << "] but could not add it";
 			FILE_LOG(logERROR) << "Error: " << errCESTRing(ce);
-			system("pause");			
+			discardSystemResult("pause");
 		}
 	}
 
@@ -193,7 +194,7 @@ public:
 	uint numClasses()			{ return _numClasses; }
 	uint numSamples()			{ return _numSamples; }	
 	uint deviceId()				{ return _deviceId; }	
-	boost::mutex* getMutex()	{ return _deviceMutex; }
+	std::mutex* getMutex()		{ return _deviceMutex; }
 
 	~GPUDevice()
 	{

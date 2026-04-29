@@ -2,6 +2,7 @@
 #include "Clock.h"
 #include "GPUDevice.h"
 #include "bsearch.cuh"
+#include "system_utils.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,7 +65,7 @@ double buildHistogram(float thresh, const Ftype *d_feature, GPUDevice *gpuDevice
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in buildHistogram";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 	return clk.toc();
 }
@@ -258,7 +259,7 @@ double buildHistogramFast(float thresh, const Ftype *d_feature, GPUDevice *gpuDe
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in buildHistogramFast";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 	return clk.toc();
 }

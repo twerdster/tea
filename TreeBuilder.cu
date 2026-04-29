@@ -1,8 +1,11 @@
 
 
 #include <assert.h>
-#include <boost/thread.hpp>
+#include <condition_variable>
+#include <iomanip>
+#include <mutex>
 #include <queue>
+#include <thread>
 #include <iostream>
 #include <string>
 #include "AtomicQueue.h"
@@ -13,12 +16,14 @@
 #include "DoubleSort.h"
 #include "utils.h"
 #include "Clock.h"
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include "log.h"
 #include "errors.h"
 
-boost::mutex broadcastMutex;
-boost::condition_variable broadcastConditionVar;
+std::mutex broadcastMutex;
+std::condition_variable broadcastConditionVar;
 int broadcastCount;
 
 //I chose against abstracting the classes to base classes with pure virtual coz im lazy but everything needs to be properly cleaned up eventually
@@ -277,7 +282,7 @@ void pushMapTasksData(int deviceId)
 	gpuDevice[deviceId].pushNodes( &nodes[0], 0, maxNodes);
 
 	// Now notify the waiting thread if the correct number of calls have been made
-	boost::mutex::scoped_lock lock(broadcastMutex);
+	std::lock_guard<std::mutex> lock(broadcastMutex);
 	broadcastCount++;
 	if (broadcastCount == numDevices)
 		broadcastConditionVar.notify_one();
@@ -291,14 +296,20 @@ void broadcastMapTasksData()
 	broadcastCount = 0;
 
 	// Broadcast all the data onto the different devices. 
+	std::vector<std::thread> tasks;
+	tasks.reserve(numDevices);
 	for (int deviceId = 0; deviceId < numDevices; deviceId++)
-		boost::thread task(&pushMapTasksData, deviceId);
+		tasks.emplace_back(&pushMapTasksData, deviceId);
 		//pushMapTasksData(deviceId);
 		
 	//And now we want to check how many broadcasts occurred. If the right number occured then we have finished
-	boost::mutex::scoped_lock lock(broadcastMutex);
+	std::unique_lock<std::mutex> lock(broadcastMutex);
 	while (broadcastCount < numDevices)
 		broadcastConditionVar.wait(lock);
+	lock.unlock();
+
+	for (std::thread &task : tasks)
+		task.join();
 
 	FILE_LOG(LOG1) << "Broadcast map task data: "<< clk.toc() << "s";
 }
@@ -524,6 +535,7 @@ int runBuilder()
 		int n=0;
 		Clock clk;
 		clk.tic();
+		std::vector<std::thread> tasks;
 		while (1) 
 		{
 			int featureToken = ((FeaturePool<Ftype>*)featurePool)->acquireFeatureToken(); 
@@ -533,13 +545,15 @@ int runBuilder()
 
 			int workerId = ((GPUWorkerPool<Ftype>*)gpuWorkerPool)->acquireGPUWorker();
 
-			boost::thread task(&launchMapTask<Ftype>,d,workerId,featureToken);
+			tasks.emplace_back(&launchMapTask<Ftype>,d,workerId,featureToken);
 			//launchMapTask<Ftype>(d,workerId,featureToken);
 
 			n++;
 		}
 
 		((GPUWorkerPool<Ftype>*)gpuWorkerPool)->waitForGPUWorkers();
+		for (std::thread &task : tasks)
+			task.join();
 
 		//We now take all the devices which have held the intermediate reductions
 		//and reduce them all onto the CPU and update the tree 

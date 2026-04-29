@@ -1,7 +1,8 @@
 #ifndef _ATOMIC_QUEUE
 #define _ATOMIC_QUEUE
 
-#include <boost/thread.hpp>
+#include <condition_variable>
+#include <mutex>
 #include <queue>
 
 template<typename Data>
@@ -9,26 +10,27 @@ class AtomicQueue
 {
 private:
 	std::queue<Data> dataQueue;
-	mutable boost::mutex conditionMutex;
-	boost::condition_variable conditionVar;
+	mutable std::mutex conditionMutex;
+	std::condition_variable conditionVar;
 public:
 	void push(Data const& data)
 	{
-		boost::mutex::scoped_lock lock(conditionMutex);
-		dataQueue.push(data);
-		lock.unlock();
+		{
+			std::lock_guard<std::mutex> lock(conditionMutex);
+			dataQueue.push(data);
+		}
 		conditionVar.notify_one();
 	}
 
 	bool empty() const
 	{
-		boost::mutex::scoped_lock lock(conditionMutex);
+		std::lock_guard<std::mutex> lock(conditionMutex);
 		return dataQueue.empty();
 	}
 
 	bool try_pop(Data& popped_value)
 	{
-		boost::mutex::scoped_lock lock(conditionMutex);
+		std::lock_guard<std::mutex> lock(conditionMutex);
 		if(dataQueue.empty())
 			return false;		
 
@@ -39,7 +41,7 @@ public:
 
 	void wait_and_pop(Data& popped_value)
 	{
-		boost::mutex::scoped_lock lock(conditionMutex);
+		std::unique_lock<std::mutex> lock(conditionMutex);
 		while(dataQueue.empty())		
 			conditionVar.wait(lock);		
 
@@ -49,7 +51,7 @@ public:
 
 	size_t size()
 	{
-		boost::mutex::scoped_lock lock(conditionMutex);
+		std::lock_guard<std::mutex> lock(conditionMutex);
 		return dataQueue.size();
 	}
 };

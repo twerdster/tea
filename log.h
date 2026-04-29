@@ -1,13 +1,13 @@
 #ifndef __LOG_H__
 #define __LOG_H__
 
-#include <boost/thread.hpp>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <stdio.h>
 #include <cstdio>
 
-static boost::mutex mtx;
+static std::mutex mtx;
 inline std::string NowTime();
 
 enum TLogLevel {logERROR, logWARNING, logINFO, LOG0, LOG1, LOG2, LOG3, LOG4};
@@ -97,13 +97,13 @@ inline FILE*& Output2FILE::Stream()
 
 inline void Output2FILE::SetStream(FILE* pFile)
 {
-    boost::mutex::scoped_lock lock(mtx);
+    std::lock_guard<std::mutex> lock(mtx);
     Stream() = pFile;
 }
 
 inline void Output2FILE::Output(const std::string& msg)
 {
-    boost::mutex::scoped_lock lock(mtx);
+    std::lock_guard<std::mutex> lock(mtx);
     FILE* pStream = Stream();
 	fprintf(stderr, "%s", msg.c_str());
     fflush(stderr);

@@ -1,6 +1,7 @@
 #include "kernels.h"
 #include "bsearch.cuh"
 #include "GPUDevice.h"
+#include "system_utils.h"
 #include <assert.h>
 #include <cuda_runtime.h>
 
@@ -37,7 +38,7 @@ void gpuScatteredWrite(Ftype* dst, const Ftype *src, const uint *index, const ui
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in gpuScatteredWrite";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 }
 
@@ -74,7 +75,7 @@ void gpuScatteredRead(Ftype* dst, const Ftype *src, const uint *index, const uin
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in gpuScatteredRead";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 }
 
@@ -108,7 +109,7 @@ void updateSamples(const Ftype* d_feature, GPUDevice *gpuDevice, const uint node
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in updateSamples";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 }
 
@@ -136,7 +137,7 @@ void resetUpdateFlag(RFTrainNode *nodes, const uint numNodes, cudaStream_t strea
 	if (cudaGetLastError()!=cudaSuccess){ 
 		FILE_LOG(logERROR) << "Error occurred in resetUpdateFlag";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");		
+		discardSystemResult("pause");		
 	}
 }
 

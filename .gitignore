@@ -3,4 +3,13 @@ Tea
 *.mex
 *.*~
 build/
+build-cmake/
+CMakeCache.txt
+CMakeFiles/
+cmake-build*/
+compile_commands.json
 data/
+Testing/
+.codex
+__pycache__/
+*.pyc

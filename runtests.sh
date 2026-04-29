@@ -1,9 +1,7 @@
-tests/k5000m-T3.test
-tests/k5000m-T4.test
-tests/k5000m-T5.test
-tests/k5000m-T6.test
-tests/k5000m-T7.test
-tests/k5000m-T8.test
-tests/k5000m-T10.test
-tests/k5000m-T11.test
+#!/usr/bin/env bash
+set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEA_BIN="${1:-${ROOT_DIR}/Tea}"
+
+python3 "${ROOT_DIR}/tests/run_smoke_tests.py" --tea "${TEA_BIN}"

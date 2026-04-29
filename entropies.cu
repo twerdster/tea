@@ -1,5 +1,6 @@
 #include "kernels.h"
 #include "GPUDevice.h"
+#include "system_utils.h"
 #include <assert.h>
 #include <cuda_runtime.h>
 
@@ -246,7 +247,7 @@ void computeEntropies(const bool updateNextLevel, const int fId, float thresh, G
 	{ 
 		FILE_LOG(logERROR) << "Error occurred in computeEntropies";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		system("pause");
+		discardSystemResult("pause");
 	}
 
 }

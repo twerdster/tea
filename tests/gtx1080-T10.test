@@ -1,3 +1,0 @@
-./Tea 100 20 16 16 F_CHAR 100000000 10 0 0 W_ONES /home/aaron/forks/tea/data/100-100-7-CHAR/ 100-20-16-16-F_CHAR-100000000-10-1-W_ONES-gtx1080-T10 0 LOG2 "Test: Timing different data types"
-./Tea 100 20 16 16 F_SHORT 100000000 10 0 0 W_ONES /home/aaron/forks/tea/data/100-100-7-SHORT/ 100-20-16-16-F_SHORT-100000000-10-1-W_ONES-gtx1080-T10 0 LOG2 "Test: Timing different data types"
-./Tea 100 20 16 16 F_FLOAT 100000000 10 0 0 W_ONES /home/aaron/forks/tea/data/100-100-7-FLOAT/ 100-20-16-16-F_FLOAT-100000000-10-1-W_ONES-gtx1080-T10 0 LOG2 "Test: Timing different data types"
