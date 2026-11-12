@@ -1,81 +1,53 @@
 # Testing
 
-Tea has a Python-driven smoke-test surface for the maintained build and data paths.
+Tea has two generated training cases and one separate generated HandNet conversion scenario.
+Their presence describes the available checks; this documentation revision did not run the CUDA
+binary, and this checkout contains no current raw execution record.
 
-## Supported Tests
+## Training cases
 
-The supported runner is:
+[run_smoke_tests.py](https://github.com/twerdster/tea/blob/main/tests/run_smoke_tests.py) uses
+[gen_smoke_dataset.py](https://github.com/twerdster/tea/blob/main/tests/gen_smoke_dataset.py) to generate `root-depth0` and
+`depth1-balanced`. Both run GPU 0 with `F_FLOAT` inputs, `W_ONES`, and equal folding/maximum depths.
+For each case the runner checks:
 
-- `tests/run_smoke_tests.py`
+- successful process exit;
+- nonempty `.tree`, `.tree.labels` and log files;
+- one predicted label per input sample, exactly matching the generated training labels;
+- a `Depth X: 100.0000%` log line at the requested depth.
 
-Current maintained cases:
-
-- `root-depth0`
-- `depth1-balanced`
-- `handnet-smoke`
-
-These are generated on the fly by:
-
-- `tests/gen_smoke_dataset.py`
-- `tests/run_handnet_converter_test.py`
-
-## What The Smoke Tests Verify
-
-Each smoke case checks:
-
-- process exit succeeds
-- expected output files exist
-- output files are non-empty
-- predicted labels match the expected labels exactly
-- the run log contains `Depth X: 100.0000%` at the target depth
-
-That gives you a fast correctness check for the maintained shallow path.
-
-The HandNet converter smoke test additionally checks:
-
-- a synthetic HandNet-style `.zip` can be converted through the Python path
-- the generated Tea files have the expected sizes and zero-based labels
-- the memory estimator accepts the generated dataset under a 500 MB cap
-- Tea can train on the converted data
-
-## Run The Full Smoke Suite
+The percentage is self-success on deliberately separable training data. It is not a held-out
+accuracy, a throughput measurement or coverage of all numerical configurations.
 
 ```bash
 make smoke
-```
-
-Or:
-
-```bash
-python3 tests/run_smoke_tests.py --tea ./Tea
-```
-
-Run the HandNet converter smoke test:
-
-```bash
-make handnet-smoke
-```
-
-## Run A Single Case
-
-```bash
+python3 tests/run_smoke_tests.py --list
 python3 tests/run_smoke_tests.py --tea ./Tea --case depth1-balanced
 ```
 
-## List The Cases
+`make smoke` runs both training cases. The Python command accepts a different binary path, such
+as `./build-cmake/Tea`, and repeatable `--case` arguments.
+
+## HandNet conversion scenario
+
+[run_handnet_converter_test.py](https://github.com/twerdster/tea/blob/main/tests/run_handnet_converter_test.py) creates four synthetic
+32×32 HandNet-style MAT frames in a ZIP archive. It converts 256 samples per frame into 1,024
+samples with 40 `F_CHAR` features, then checks file sizes and zero-based labels spanning 0–6.
+It runs the memory estimator with a 500 MB cap, trains to depth 1 and requires nonempty tree,
+predicted-label and log outputs.
 
 ```bash
-python3 tests/run_smoke_tests.py --list
+python3 -m pip install -r requirements-tools.txt
+make handnet-smoke
 ```
 
-## Why The Tests Stop At Depth 1
+This scenario does not compare predicted labels with expected values or require a particular
+self-success percentage. It uses generated input, so no HandNet download is needed, but CUDA
+training and the Python dependencies are still required.
 
-The repository is an older research codebase. The current goal of the maintained test surface is:
+## Coverage limits
 
-- prove the modernized build still works
-- prove the supported dataset and runtime path still works
-- keep verification fast and repeatable
-
-That is why the supported automated path stops at shallow trees for now.
-
-Deeper configurations are better treated as benchmark workloads and staged regressions, not as the first mandatory correctness layer.
+The three scenarios do not establish deeper-tree correctness, all feature types, other weighting
+modes, multiple GPU execution, real HandNet prediction accuracy or current-toolchain compatibility.
+A larger run described in a guide is not part of this regression suite. Keep performance and
+application evaluation records separate from these small data-path checks.

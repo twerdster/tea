@@ -1,61 +1,42 @@
 # Tea
 
-Tea is a CUDA/C++ trainer for large randomized decision trees over precomputed feature datasets. It was built for the regime where the expensive part of the pipeline is not feature extraction at runtime, but searching large banks of candidate features and thresholds across very large sample sets.
+Tea is a CUDA/C++ program that trains a randomized decision tree from feature columns prepared
+offline. The related BMVC 2015 paper [*Rule of Thumb: Deep Derotation for Improved Fingertip Detection*](https://arxiv.org/abs/1507.05726)
+is by Aaron Wetzler, Ron Slossberg and Ron Kimmel. The repository's converter maps HandNet data
+from that work to the feature-column format used by Tea.
 
-Tea was used for large-scale training in the BMVC 2015 paper [*Rule Of Thumb: Deep derotation for improved fingertip detection*](https://arxiv.org/abs/1507.05726) by Aaron Wetzler, Ron Slossberg, and Ron Kimmel.
+## Data flow
 
-## What Tea Is Good At
+1. Read labels and threshold metadata, then load feature columns from disk.
+2. Send columns to CUDA workers and reorder them for the current sample index lists.
+3. Evaluate candidate thresholds by accumulating class histograms and entropy scores.
+4. Select the best split for each active node on the host.
+5. Partition sample indices and repeat for the next depth.
+6. Write a tree snapshot, training-sample predictions and a log.
 
-Tea is a good fit when you have:
+The core trainer searches over precomputed features. Image preprocessing and feature extraction
+belong to separate tools, including the Python HandNet converter.
 
-- a large offline dataset that is already stored as feature columns
-- many candidate features that must be evaluated efficiently
-- one or more NVIDIA GPUs on a single machine
-- a workflow where shallow-to-moderate depth trees are useful and training speed matters
+## Implementation and validation scope
 
-Tea is not a general modern machine learning framework. It does not aim to replace end-to-end deep learning libraries, and it is not built around Python-first training loops. Its strength is focused GPU acceleration for a specific style of decision-tree training.
+The repository includes Make/CMake builds, C++ standard-library host threading and Python tools
+for generated datasets, conversion, memory estimation and synthetic timing sweeps. Linux and an
+NVIDIA CUDA device are required for training.
 
-## Core Idea
+The automated training suite has two synthetic cases at depths 0 and 1. A separate synthetic
+HandNet conversion scenario checks the data path and nonempty training outputs; it does not
+check predicted-label correctness. See [Testing](testing.md) for the exact assertions and limits.
+There is no current raw build/test log in this checkout. The documentation revision did not run
+GPU training or reproduce the paper's results.
 
-Tea stores each feature in a separate file, keeps labels and threshold metadata alongside them, and repeatedly performs the same high-level loop:
+## Read next
 
-1. Load a feature column into host memory.
-2. Scatter it into sample order on the GPU.
-3. Evaluate multiple thresholds for that feature.
-4. Build class histograms for candidate splits.
-5. Score split quality and keep the best split per node.
-6. Repartition samples and continue to the next tree level.
+- [Getting Started](getting-started.md): requirements, build commands and first smoke checks.
+- [Training Workflow](training-workflow.md): the implementation's operator chain.
+- [Dataset Format](dataset-format.md): binary input layout.
+- [CLI and Outputs](cli-and-outputs.md): positional arguments and output files.
+- [HandNet](handnet.md): MAT archive conversion and evaluation qualifications.
+- [Benchmarking](benchmarking.md): synthetic runtime sweeps and CSV fields.
 
-The implementation is designed to overlap disk reads, host-side coordination, and GPU work so the system can handle datasets that are large in sample count, feature count, or both.
-
-## Why The Design Is Useful
-
-Tea exists for the case where a dataset is too large or too expensive to treat as a tiny in-memory experiment. The design is useful because it:
-
-- makes feature evaluation scale with GPU throughput instead of pure CPU loops
-- keeps the training format simple and explicit on disk
-- supports multi-GPU training on a single machine
-- provides a natural way to benchmark how cost changes with feature count, threshold count, depth, and sample count
-
-## Maintained Path
-
-The maintained path in this repository is:
-
-- build with `make` or CMake
-- verify the binary with shallow smoke tests
-- use the Python dataset utilities for examples, benchmarking, and HandNet conversion
-
-The repository does not claim full regression coverage for all historical deep-tree workloads. The supported automated verification surface currently focuses on shallow correctness and bounded benchmark runs.
-
-## Where To Start
-
-If you are new to Tea, read these pages in order:
-
-1. [Getting Started](getting-started.md)
-2. [Training Workflow](training-workflow.md)
-3. [Dataset Format](dataset-format.md)
-4. [CLI and Outputs](cli-and-outputs.md)
-
-If you want to measure performance, go to [Benchmarking](benchmarking.md).
-
-If you want to use restored HandNet data, go to [HandNet](handnet.md).
+Large datasets, multi-GPU execution, deep trees and alternative weighting modes need validation
+beyond the small synthetic checks. Timing on generated data is not an application accuracy result.

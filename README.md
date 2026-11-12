@@ -1,405 +1,108 @@
 # Tea
 
-[![CUDA](https://img.shields.io/badge/CUDA-NVIDIA-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
-[![C++11](https://img.shields.io/badge/C%2B%2B-11-00599C?logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
-[![CMake](https://img.shields.io/badge/CMake-supported-064F8C?logo=cmake&logoColor=white)](https://cmake.org/)
+[![CUDA](https://img.shields.io/badge/CUDA-NVIDIA-76B900?logo=nvidia&logoColor=white)](TreeBuilder.cu)
+[![C++11](https://img.shields.io/badge/C%2B%2B-11-00599C?logo=c%2B%2B&logoColor=white)](CMakeLists.txt)
+[![CMake](https://img.shields.io/badge/build-CMake-064F8C?logo=cmake&logoColor=white)](CMakeLists.txt)
 
-![Explanatory illustration of Tea's training flow: column-wise feature dataset, CUDA histogram and entropy workers, host split selection per depth, tree and predicted-label output](docs/images/tea-training-pipeline.svg)
+Tea trains a randomized decision tree from precomputed feature columns. CUDA workers accumulate
+class histograms and score candidate splits; the host selects splits, reorders sample indices
+and writes tree snapshots and predicted labels. The related BMVC 2015 paper [*Rule of Thumb: Deep Derotation for Improved Fingertip Detection*](https://arxiv.org/abs/1507.05726)
+is by Aaron Wetzler, Ron Slossberg and Ron Kimmel. This repository includes tools for converting
+that work's HandNet data into Tea feature columns.
 
-*Explanatory illustration of the training flow described in [docs/training-workflow.md](docs/training-workflow.md). It shows no benchmark or training result.*
+![Schematic of feature columns, CUDA split evaluation, host selection and tree outputs](docs/images/tea-training-pipeline.svg)
 
-Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datasets. It was used for large-scale training in the BMVC 2015 paper [*Rule Of Thumb: Deep derotation for improved fingertip detection*](https://arxiv.org/abs/1507.05726) by Aaron Wetzler, Ron Slossberg, and Ron Kimmel. This repository now includes:
+*Implementation schematic. It contains no measured throughput or accuracy result.*
 
-- a modernized host-side threading layer based on the C++ standard library
-- a supported local build flow with both `make` and CMake
-- shallow automated smoke tests for depth `0` and depth `1`
-- small generated example datasets and copy-pasteable example commands
-- Python dataset utilities for expansion, benchmarking, memory estimation, and HandNet conversion
+## Current implementation
 
-The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Historical MATLAB tooling has been replaced by maintained Python-based testing, benchmarking, and HandNet conversion utilities.
+The source uses C++ standard-library threading, Make and CMake build paths, and Python tools for
+data generation, inspection, expansion, HandNet conversion and bounded synthetic benchmark runs.
+These are implemented workflows, not a claim that all historical configurations have been validated.
+The automated training checks are limited to two small synthetic cases at depths 0 and 1; the
+separate converter check exercises the HandNet-to-Tea data path on four synthetic MAT frames,
+not the original dataset archives.
 
-## Documentation
+Tea reads a directory containing:
 
-The repository now includes a multi-page documentation site under `docs/`, built with MkDocs.
+- `Labels.lbl`: one binary `uint16` class ID per sample.
+- `Threshholds.thr`: three binary `float32` threshold metadata values per feature. The spelling is
+  part of the file format.
+- `F_0000.feat`, `F_0001.feat`, …: one binary feature column per file, with datatype selected by the CLI.
 
-Install the docs dependencies:
+A run writes `Tree_0000.tree`, `Tree_0000.tree.labels` and `LogFile_<prefix>_0000.log` to the dataset
+directory for tree number 0. Snapshots are rewritten as training advances through the depths.
+See [dataset format](docs/dataset-format.md) and [CLI/output details](docs/cli-and-outputs.md).
 
-```bash
-python3 -m pip install -r requirements-docs.txt
-```
+## Requirements and first run
 
-Serve the site locally:
-
-```bash
-bash scripts/serve_docs.sh
-```
-
-Build the static site:
-
-```bash
-bash scripts/build_docs.sh
-```
-
-The GitHub Pages workflow is defined in `.github/workflows/docs.yml`.
-
-## Repository Status
-
-The repository has been updated to build on a modern Linux toolchain. The active workflow in this repo is:
-
-- build the `Tea` binary
-- run the supported smoke tests
-- use the small example datasets to verify shallow-tree training
-
-The supported automated test coverage currently stops at depth `1`. That is deliberate: it validates the modernized build/runtime path without immediately stepping into older deeper-tree edge cases that deserve separate work.
-
-## Requirements
-
-You need:
-
-- Linux
-- an NVIDIA GPU with a working driver
-- the CUDA toolkit, including `nvcc`
-- Python 3
-- a C++11-capable host compiler
-- CMake if you want the CMake-based build path
-- NumPy and SciPy if you want to run the HandNet converter
-
-OpenMP is optional. If it is available, Tea uses it for a small amount of host-side parallel work. If it is not available, the code still builds.
-
-## Quick Start
-
-Check the local toolchain and GPU visibility:
+The documented training target is Linux with an NVIDIA GPU with a working driver, the CUDA toolkit (`nvcc`) and a
+C++11-capable host compiler. Python 3 drives the tests and data tools; CMake is optional. OpenMP
+can be disabled. HandNet conversion additionally requires NumPy and SciPy, and `bsdtar` for RAR
+input. This is not a CPU-only trainer.
 
 ```bash
 bash scripts/check_env.sh
-```
-
-Build with the Makefile:
-
-```bash
 make Tea
-```
-
-Run the supported smoke tests:
-
-```bash
 make smoke
 ```
 
-That command:
-
-- generates tiny test datasets under `/tmp`
-- runs Tea on a depth-0 root-separable case
-- runs Tea on a depth-1 balanced case
-- verifies the expected output files and final predicted labels
-
-## Build Options
-
-### Makefile
-
-Default build:
-
-```bash
-make Tea
-```
-
-Override the CUDA compiler:
-
-```bash
-make Tea NVCC=/path/to/nvcc
-```
-
-Override the CUDA architecture:
-
-```bash
-make Tea CUDA_ARCH=sm_89
-```
-
-Disable OpenMP if needed:
-
-```bash
-make Tea OPENMP_FLAGS=
-```
-
-Show available Makefile helpers:
-
-```bash
-make help
-```
-
-### CMake
-
-Configure and build:
-
-```bash
-bash scripts/build.sh
-```
-
-By default, that builds into `build-cmake/`.
-
-Override the CUDA architecture:
-
-```bash
-CUDA_ARCH=89 bash scripts/build.sh
-```
-
-You can also use raw CMake commands directly:
-
-```bash
-cmake -S . -B build-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=86
-cmake --build build-cmake -j
-```
-
-Disable OpenMP in the CMake path if needed:
-
-```bash
-TEA_ENABLE_OPENMP=OFF bash scripts/build.sh
-```
-
-## Smoke Tests
-
-The supported smoke-test runner is [tests/run_smoke_tests.py](tests/run_smoke_tests.py).
-
-Run it directly:
-
-```bash
-python3 tests/run_smoke_tests.py --tea ./Tea
-```
-
-List the available supported cases:
-
-```bash
-python3 tests/run_smoke_tests.py --list
-```
-
-Or through the wrapper:
-
-```bash
-bash scripts/run_smoke.sh ./Tea
-```
-
-The smoke suite covers:
-
-- `root-depth0`: a depth-0 dataset that is perfectly separable at the root
-- `depth1-balanced`: a depth-1 dataset that needs one additional split
-
-The runner checks:
-
-- successful process exit
-- expected output files exist
-- final predicted labels match the known labels exactly
-- the log reports `Depth X: 100.0000%` at the target depth
-
-More detail is in [tests/README.md](tests/README.md).
-
-## HandNet Conversion
-
-The useful HandNet MATLAB/MEX preprocessing path has been ported to [scripts/handnet_to_tea.py](scripts/handnet_to_tea.py).
-
-Install the converter dependencies:
-
-```bash
-python3 -m pip install -r requirements-tools.txt
-```
-
-Convert a HandNet archive into Tea format:
-
-```bash
-python3 scripts/handnet_to_tea.py \
-  --archive /path/to/ValidationData.zip \
-  --output /tmp/tea-handnet-validation \
-  --features 200 \
-  --feature-type F_CHAR \
-  --samples-per-frame 2000 \
-  --force
-```
-
-For large `TrainData.rar` slices, extract the selected `Data_*.mat` files once with `bsdtar -T` and pass the extracted `TrainData/` directory to the converter. That is much faster than repeatedly reading individual files from the RAR archive. A documented depth-8 TrainData slice workflow is in [docs/handnet.md](docs/handnet.md).
-
-Estimate depth-3 training memory before running Tea:
-
-```bash
-python3 scripts/estimate_training_memory.py \
-  --dataset /tmp/tea-handnet-validation \
-  --max-depth 3 \
-  --folding-depth 3 \
-  --feature-type F_CHAR \
-  --vram-cap-mb 500 \
-  --require-fit
-```
-
-Run the maintained no-data converter smoke test:
-
-```bash
-make handnet-smoke
-```
-
-More detail is in [docs/handnet.md](docs/handnet.md).
-
-## Dataset Utility
-
-[scripts/expand_dataset.py](scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
-
-Inspect an existing dataset:
-
-```bash
-python3 scripts/expand_dataset.py inspect /path/to/data single
-```
-
-Write a derived dataset:
-
-```bash
-python3 scripts/expand_dataset.py expand /path/to/data single /tmp/tea-expanded 1000 200 7 single
-```
-
-That utility can:
-
-- tile samples to a new sample count
-- change feature file datatype across `int8`, `int16`, `int32`, and `single`
-- expand feature count by repeating feature columns
-- derive new label distributions for quick benchmarking
-
-## Benchmarking
-
-Use [scripts/benchmark.py](scripts/benchmark.py) to generate bounded synthetic datasets, run Tea over sample/feature/depth sweeps, and write a CSV summary.
-
-Example:
-
-```bash
-python3 scripts/benchmark.py \
-  --tea ./Tea \
-  --work-dir /tmp/tea-bench-run \
-  --samples 250000,1000000,2000000 \
-  --features 32,128,256 \
-  --depths 1,2,4,6 \
-  --feature-type F_CHAR \
-  --vram-cap-mb 500
-```
-
-That script:
-
-- generates synthetic Tea datasets directly in columnar `F_XXXX.feat` format
-- estimates Tea's per-device VRAM requirement before each run
-- refuses any case that exceeds the configured cap
-- writes results to `results/benchmark_results.csv`
-
-## Manual Examples
-
-Additional copy-pasteable examples live in [examples/README.md](examples/README.md).
-
-### Root-only Example
-
-Generate a tiny dataset:
+The Makefile defaults to `CUDA_ARCH=sm_86`; select the architecture for the installed GPU and
+compiler, for example `make Tea CUDA_ARCH=sm_89`. Use `make Tea OPENMP_FLAGS=` to disable OpenMP.
+The CMake alternative is `bash scripts/build.sh`, followed by
+`python3 tests/run_smoke_tests.py --tea ./build-cmake/Tea`.
+
+To generate and train a tiny root-only example (argument order is documented in
+[CLI/output details](docs/cli-and-outputs.md)):
 
 ```bash
 python3 tests/gen_smoke_dataset.py /tmp/tea-example-root --scenario root
-```
-
-Train a depth-0 tree:
-
-```bash
 ./Tea 4 4 0 0 F_FLOAT 16 4 0 0 W_ONES /tmp/tea-example-root/ example_root 0 LOG1 "manual root example"
 ```
 
-### Depth-1 Example
+See [getting started](docs/getting-started.md) for compiler overrides and documentation setup,
+[examples](examples/README.md) for CLI cases, [HandNet conversion](docs/handnet.md) for archive
+preprocessing, and [benchmarking](docs/benchmarking.md) for CSV-producing synthetic sweeps.
 
-Generate a shallow two-level dataset:
+## Validation scope
 
-```bash
-python3 tests/gen_smoke_dataset.py /tmp/tea-example-depth1 --scenario depth1
-```
+Review date: 2026-11-12.
 
-Train a depth-1 tree:
+[tests/run_smoke_tests.py](tests/run_smoke_tests.py) defines two cases: `root-depth0` and
+`depth1-balanced`. Both use generated `F_FLOAT` features, unit sample weights, GPU 0 and equal
+maximum/folding depths. The runner checks process exit, nonempty tree/label/log outputs, exact
+training-label predictions and a `Depth X: 100.0000%` log line. That percentage is training-set
+self-success for a deliberately separable synthetic dataset, not held-out accuracy.
 
-```bash
-./Tea 4 4 1 1 F_FLOAT 16 4 0 0 W_ONES /tmp/tea-example-depth1/ example_depth1 0 LOG1 "manual depth1 example"
-```
+`make handnet-smoke` runs [tests/run_handnet_converter_test.py](tests/run_handnet_converter_test.py).
+It creates four synthetic MAT frames, converts them to 1,024 samples and 40 `F_CHAR` features,
+checks file sizes and labels 0–6, estimates memory under a configured 500 MB cap, then runs a
+depth-1 tree and checks for nonempty outputs. It does **not** compare its predicted labels with
+expected labels. Coverage consists of two training cases and one conversion scenario; it does not
+include an application benchmark or broad regression coverage.
 
-## Input Dataset Format
+This documentation revision reviewed the implementation and test assertions and rebuilt the
+documentation. It did not compile CUDA, run the GPU tests, start training or reproduce the paper's
+results. The repository does not include raw logs for a current toolchain validation. Historical
+run descriptions in the guides are identified as reports rather than newly verified results.
 
-Tea expects a directory containing:
+## Limitations
 
-- `Labels.lbl`
-  Binary `uint16` labels, one per sample
-- `Threshholds.thr`
-  Binary `float32` threshold metadata, three floats per feature
-- `F_0000.feat`, `F_0001.feat`, ...
-  Binary feature columns, one file per feature
+The small tests do not cover deep trees, all feature types, alternate weighting modes, multiple
+GPUs or application-level accuracy. Features must be prepared before training; the core trainer
+does not extract image features. Synthetic benchmark timing and training-set self-success do not
+measure HandNet fingertip detection accuracy. Pixel-label imbalance can make that self-success
+high even when a model predicts the dominant class.
 
-The supported smoke-data generator writes exactly that structure, so it is the easiest reference for the on-disk layout:
+Before a large run, inspect the input format and estimate memory using the linked tools. The
+memory cap is an estimate, not a guarantee that all runtime allocations fit. Further work is
+needed for held-out prediction/evaluation and deeper regression cases.
 
-- [tests/gen_smoke_dataset.py](tests/gen_smoke_dataset.py)
+## Documentation and attribution
 
-## Output Files
+The [MkDocs source](docs/index.md) describes the operator chain and workflows. Build it with
+`bash scripts/build_docs.sh` after installing `requirements-docs.txt`; the existing GitHub Pages
+workflow is configured to publish it. See [site maintenance](docs/docs-site.md) for details.
 
-A training run writes:
-
-- `Tree_0000.tree`
-  Serialized tree snapshot for the current build depth
-- `Tree_0000.tree.labels`
-  Predicted label per sample for that tree snapshot
-- `LogFile_<prefix>_0000.log`
-  Run log with timing and self-success information
-
-Note that Tea snapshots the tree after each level and rewrites the same output filenames for the current run prefix.
-
-## Repository Layout
-
-- [TreeBuilder.cu](TreeBuilder.cu)
-  Main training entry point
-- [histograms.cu](histograms.cu), [entropies.cu](entropies.cu), [utilities.cu](utilities.cu)
-  CUDA kernels and GPU-side utilities
-- [tests/README.md](tests/README.md)
-  Supported test workflow
-- [examples/README.md](examples/README.md)
-  Manual example commands
-- [scripts/expand_dataset.py](scripts/expand_dataset.py)
-  Dataset inspection and expansion helper
-- [scripts/handnet_to_tea.py](scripts/handnet_to_tea.py)
-  HandNet `.mat` archive converter
-- [scripts/estimate_training_memory.py](scripts/estimate_training_memory.py)
-  Standalone Tea GPU-memory estimator for existing datasets
-- [scripts/benchmark.py](scripts/benchmark.py)
-  Synthetic benchmark runner with a configurable VRAM cap
-- [HandNet/README.md](HandNet/README.md)
-  HandNet conversion notes; the old MATLAB/MEX files are no longer maintained
-
-## Recommended Path
-
-If you are starting fresh, use:
-
-1. `make Tea` or `bash scripts/build.sh`
-2. `make smoke`
-3. `make handnet-smoke` if you plan to use HandNet data
-4. the examples in [examples/README.md](examples/README.md)
-
-## Troubleshooting
-
-If Tea reports `cudaErrorNoDevice`, first confirm that your shell can see the GPU:
-
-```bash
-nvidia-smi
-```
-
-If the build fails because of the selected architecture, override it explicitly:
-
-```bash
-make Tea CUDA_ARCH=sm_89
-```
-
-If OpenMP causes trouble in your environment, disable it:
-
-```bash
-make Tea OPENMP_FLAGS=
-```
-
-## Current Focus
-
-The repository is now organized around:
-
-- clean builds on a modern toolchain
-- supported shallow smoke tests
-- maintained Python HandNet conversion
-- clear examples and setup
-
-The next layers of work after that are deeper regression coverage and longer legacy benchmark validation, but those are intentionally separate from the current easy-to-use path.
+Existing author credits and source notices are retained. No standalone software license is
+included in this checkout; these documentation changes do not assign one.

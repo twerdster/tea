@@ -30,9 +30,9 @@ Tea assumes that features have already been computed offline and saved column-wi
 
 This is a deliberate tradeoff:
 
-- it makes training simple and repeatable
-- it avoids mixing feature extraction with split search
-- it allows the trainer to benchmark raw split-evaluation throughput
+- the trainer reads a defined binary layout
+- feature extraction is separate from split search
+- synthetic benchmark runs can vary feature count independently of extraction cost
 
 The cost is that you must prepare the dataset in Tea's on-disk format before training.
 
@@ -58,21 +58,15 @@ Tea distinguishes between:
 
 The folding depth changes how histogram storage and passes over node subsets are organized. In practice, it is a performance parameter, not just a semantic tree-depth parameter.
 
-For shallow verified runs, using `foldingDepth == maxDepth` is the easiest maintained path.
+Both generated training cases use `foldingDepth == maxDepth`; alternative folding configurations are outside their coverage.
 
-## Why This Can Be Fast
+## Work distribution
 
-Tea's performance comes from three ideas working together:
-
-- precomputed feature columns
-- GPU histogram and threshold evaluation
-- overlapped host-side loading and worker dispatch
-
-That makes it particularly useful when the expensive part of training is evaluating large numbers of candidate features against a large sample set.
+The implementation separates disk loading, host coordination and GPU split evaluation. Feature columns can be prepared while workers process earlier columns. The performance of that overlap depends on storage, feature counts, device memory and GPU configuration; this description is not a measured speedup.
 
 ## Known Limits
 
-Tea is an older research codebase. The repository now has a clean maintained path, but you should still treat these areas carefully:
+Tea is an older research codebase. The available small tests leave these areas unverified:
 
 - very deep trees
 - large historical benchmark configurations that were never part of modern CI

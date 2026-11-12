@@ -1,6 +1,6 @@
 # Getting Started
 
-This page covers the shortest path from clone to a verified local build.
+This page describes the build commands and small checks available in the repository. A successful local run is required before treating a toolchain as validated.
 
 ## Requirements
 
@@ -31,7 +31,7 @@ That script checks:
 - `cmake`
 - `nvidia-smi`
 
-If `nvidia-smi` fails, the build may still work, but GPU training runs will not.
+If `nvidia-smi` fails, investigate device/driver visibility before running training. Its failure alone does not distinguish a missing GPU from a tooling or permission problem.
 
 ## Build With The Makefile
 
@@ -85,7 +85,7 @@ The smoke suite currently covers:
 - a depth-0 root-separable dataset
 - a depth-1 balanced dataset
 
-These are deliberately small and fast. They are intended to prove that the maintained build and runtime path is alive, not to exhaustively validate every historical training regime.
+These cases check exact training-label predictions on small synthetic inputs. Passing them validates those cases in the tested environment; it does not establish compatibility or correctness for every historical training regime. See [Testing](testing.md) for the assertions and coverage limits.
 
 If you plan to use HandNet conversion, install the extra Python tooling and run its converter smoke test:
 

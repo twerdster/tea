@@ -1,11 +1,11 @@
 # Tests
 
-The active test workflow in this repository is the smoke-test suite in [run_smoke_tests.py](/home/aaron/repos/tea/tests/run_smoke_tests.py). It covers:
+The active test workflow in this repository is the smoke-test suite in [run_smoke_tests.py](run_smoke_tests.py). It covers:
 
 - a depth-0 root-separable dataset
 - a depth-1 balanced dataset that requires a second split
 
-Both cases are generated on the fly by [gen_smoke_dataset.py](/home/aaron/repos/tea/tests/gen_smoke_dataset.py), run through the `Tea` binary, and then verified by checking:
+Both cases are generated on the fly by [gen_smoke_dataset.py](gen_smoke_dataset.py), run through the `Tea` binary, and then verified by checking:
 
 - the process exits successfully
 - the expected `.tree`, `.labels`, and log files are written
@@ -70,4 +70,6 @@ The HandNet converter has a separate no-data smoke test:
 make handnet-smoke
 ```
 
-It creates a synthetic HandNet-style `.zip`, converts it with `scripts/handnet_to_tea.py`, checks the generated Tea files, estimates memory under a 500 MB cap, and runs Tea on the converted dataset.
+It creates a synthetic HandNet-style `.zip`, converts it with `scripts/handnet_to_tea.py`, checks the generated file sizes and labels, estimates memory under a 500 MB cap, and runs Tea on the converted dataset. It requires nonempty training outputs but does not check their predicted-label correctness.
+
+These are two shallow training cases plus a separate conversion scenario. They do not reproduce application benchmarks or establish deeper-tree correctness. This documentation revision did not execute the CUDA tests; no current raw run log is included in this checkout.

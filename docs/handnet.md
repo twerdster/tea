@@ -1,8 +1,9 @@
 # HandNet
 
-Tea now has a maintained Python path for turning HandNet `Data_*.mat` files into native Tea datasets.
-
-This replaces the old MATLAB/MEX preprocessing path. The useful behavior was ported into:
+The Python converter reads HandNet `Data_*.mat` files and writes native Tea datasets. It is
+intended to reproduce useful parts of the historical MATLAB/MEX preprocessing, but its outputs
+have not been compared with that implementation. The current implementation and generated-input
+check are:
 
 - `scripts/handnet_to_tea.py`
 - `tests/run_handnet_converter_test.py`
@@ -18,7 +19,7 @@ It then:
 
 - samples pixels where `lbl >= 1`
 - converts labels from HandNet's `1..7` range to Tea's zero-based `0..6` range
-- generates the historical radial depth-difference feature coordinates
+- generates radial depth-difference coordinates intended to follow the historical feature construction
 - computes one Tea feature-column file per generated feature
 - writes Tea threshold metadata, coordinates, poses, labels, and JSON metadata
 
@@ -114,7 +115,7 @@ python3 scripts/estimate_training_memory.py \
   "HandNet TrainData 10000-frame depth-8 test"
 ```
 
-During modernization, this exact scale was exercised on a 10,000-frame TrainData slice with 19,949,016 samples and 200 `F_CHAR` features. The depth-8 memory estimate was about 110 MB per device, and the single-tree run completed successfully. The final self-success matched the dominant class rate, which is expected for raw imbalanced pixel labels.
+The earlier repository guide reported a completed depth-8 run on 10,000 TrainData frames (19,949,016 samples and 200 `F_CHAR` features), with an estimated 110 MB per device. No raw run log, device record or output artifact accompanies that report in this checkout, so those figures are a historical account rather than a reproduced result. The same account reported self-success near the dominant class rate; that would not establish fingertip detection accuracy.
 
 ## Estimate Training Memory
 
@@ -143,7 +144,8 @@ print(json.load(open("/tmp/tea-handnet-validation/handnet_metadata.json"))["samp
 PY
 ```
 
-Then pass that sample count to Tea:
+Then pass that sample count to Tea. The argument after the sample count (`8` below) is the number
+of candidate thresholds, not the number of classes; see [CLI parameters](cli-and-outputs.md):
 
 ```bash
 ./Tea 200 32 3 3 F_CHAR <samples> 8 0 0 W_ONES \
@@ -159,8 +161,8 @@ The repo includes a no-data HandNet converter test. It creates a tiny synthetic 
 make handnet-smoke
 ```
 
-This is the maintained test for the HandNet conversion path. Real HandNet archive runs are useful integration tests, but they are too large for default CI-style checks.
+This generated-input scenario checks the conversion layout, labels, estimated memory and nonempty training outputs. It does not check predicted-label correctness. Real HandNet archives and application metrics require separate integration and evaluation records.
 
 ## Accuracy Note
 
-A depth-3 run on raw pixel labels is a data-path validation, not a full application benchmark. HandNet labels are highly imbalanced at the pixel level, so a shallow tree can report self-success near the dominant class rate. Meaningful application evaluation should add held-out prediction tooling, class-balancing decisions, deeper trees or ensembles, and task-specific metrics.
+A depth-3 run on raw pixel labels would be a data-path check, not a full application benchmark. HandNet labels are highly imbalanced at the pixel level, so a shallow tree can report self-success near the dominant class rate. Meaningful application evaluation should add held-out prediction tooling, class-balancing decisions, deeper trees or ensembles, and task-specific metrics.
