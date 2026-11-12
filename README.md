@@ -4,6 +4,10 @@
 [![C++11](https://img.shields.io/badge/C%2B%2B-11-00599C?logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
 [![CMake](https://img.shields.io/badge/CMake-supported-064F8C?logo=cmake&logoColor=white)](https://cmake.org/)
 
+![Explanatory illustration of Tea's training flow: column-wise feature dataset, CUDA histogram and entropy workers, host split selection per depth, tree and predicted-label output](docs/images/tea-training-pipeline.svg)
+
+*Explanatory illustration of the training flow described in [docs/training-workflow.md](docs/training-workflow.md). It shows no benchmark or training result.*
+
 Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datasets. It was used for large-scale training in the BMVC 2015 paper [*Rule Of Thumb: Deep derotation for improved fingertip detection*](https://arxiv.org/abs/1507.05726) by Aaron Wetzler, Ron Slossberg, and Ron Kimmel. This repository now includes:
 
 - a modernized host-side threading layer based on the C++ standard library
@@ -154,7 +158,7 @@ TEA_ENABLE_OPENMP=OFF bash scripts/build.sh
 
 ## Smoke Tests
 
-The supported smoke-test runner is [tests/run_smoke_tests.py](/home/aaron/repos/tea/tests/run_smoke_tests.py).
+The supported smoke-test runner is [tests/run_smoke_tests.py](tests/run_smoke_tests.py).
 
 Run it directly:
 
@@ -186,11 +190,11 @@ The runner checks:
 - final predicted labels match the known labels exactly
 - the log reports `Depth X: 100.0000%` at the target depth
 
-More detail is in [tests/README.md](/home/aaron/repos/tea/tests/README.md).
+More detail is in [tests/README.md](tests/README.md).
 
 ## HandNet Conversion
 
-The useful HandNet MATLAB/MEX preprocessing path has been ported to [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py).
+The useful HandNet MATLAB/MEX preprocessing path has been ported to [scripts/handnet_to_tea.py](scripts/handnet_to_tea.py).
 
 Install the converter dependencies:
 
@@ -210,7 +214,7 @@ python3 scripts/handnet_to_tea.py \
   --force
 ```
 
-For large `TrainData.rar` slices, extract the selected `Data_*.mat` files once with `bsdtar -T` and pass the extracted `TrainData/` directory to the converter. That is much faster than repeatedly reading individual files from the RAR archive. A documented depth-8 TrainData slice workflow is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+For large `TrainData.rar` slices, extract the selected `Data_*.mat` files once with `bsdtar -T` and pass the extracted `TrainData/` directory to the converter. That is much faster than repeatedly reading individual files from the RAR archive. A documented depth-8 TrainData slice workflow is in [docs/handnet.md](docs/handnet.md).
 
 Estimate depth-3 training memory before running Tea:
 
@@ -230,11 +234,11 @@ Run the maintained no-data converter smoke test:
 make handnet-smoke
 ```
 
-More detail is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+More detail is in [docs/handnet.md](docs/handnet.md).
 
 ## Dataset Utility
 
-[scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
+[scripts/expand_dataset.py](scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
 
 Inspect an existing dataset:
 
@@ -257,7 +261,7 @@ That utility can:
 
 ## Benchmarking
 
-Use [scripts/benchmark.py](/home/aaron/repos/tea/scripts/benchmark.py) to generate bounded synthetic datasets, run Tea over sample/feature/depth sweeps, and write a CSV summary.
+Use [scripts/benchmark.py](scripts/benchmark.py) to generate bounded synthetic datasets, run Tea over sample/feature/depth sweeps, and write a CSV summary.
 
 Example:
 
@@ -281,7 +285,7 @@ That script:
 
 ## Manual Examples
 
-Additional copy-pasteable examples live in [examples/README.md](/home/aaron/repos/tea/examples/README.md).
+Additional copy-pasteable examples live in [examples/README.md](examples/README.md).
 
 ### Root-only Example
 
@@ -324,7 +328,7 @@ Tea expects a directory containing:
 
 The supported smoke-data generator writes exactly that structure, so it is the easiest reference for the on-disk layout:
 
-- [tests/gen_smoke_dataset.py](/home/aaron/repos/tea/tests/gen_smoke_dataset.py)
+- [tests/gen_smoke_dataset.py](tests/gen_smoke_dataset.py)
 
 ## Output Files
 
@@ -341,23 +345,23 @@ Note that Tea snapshots the tree after each level and rewrites the same output f
 
 ## Repository Layout
 
-- [TreeBuilder.cu](/home/aaron/repos/tea/TreeBuilder.cu)
+- [TreeBuilder.cu](TreeBuilder.cu)
   Main training entry point
-- [histograms.cu](/home/aaron/repos/tea/histograms.cu), [entropies.cu](/home/aaron/repos/tea/entropies.cu), [utilities.cu](/home/aaron/repos/tea/utilities.cu)
+- [histograms.cu](histograms.cu), [entropies.cu](entropies.cu), [utilities.cu](utilities.cu)
   CUDA kernels and GPU-side utilities
-- [tests/README.md](/home/aaron/repos/tea/tests/README.md)
+- [tests/README.md](tests/README.md)
   Supported test workflow
-- [examples/README.md](/home/aaron/repos/tea/examples/README.md)
+- [examples/README.md](examples/README.md)
   Manual example commands
-- [scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py)
+- [scripts/expand_dataset.py](scripts/expand_dataset.py)
   Dataset inspection and expansion helper
-- [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py)
+- [scripts/handnet_to_tea.py](scripts/handnet_to_tea.py)
   HandNet `.mat` archive converter
-- [scripts/estimate_training_memory.py](/home/aaron/repos/tea/scripts/estimate_training_memory.py)
+- [scripts/estimate_training_memory.py](scripts/estimate_training_memory.py)
   Standalone Tea GPU-memory estimator for existing datasets
-- [scripts/benchmark.py](/home/aaron/repos/tea/scripts/benchmark.py)
+- [scripts/benchmark.py](scripts/benchmark.py)
   Synthetic benchmark runner with a configurable VRAM cap
-- [HandNet/README.md](/home/aaron/repos/tea/HandNet/README.md)
+- [HandNet/README.md](HandNet/README.md)
   HandNet conversion notes; the old MATLAB/MEX files are no longer maintained
 
 ## Recommended Path
@@ -367,7 +371,7 @@ If you are starting fresh, use:
 1. `make Tea` or `bash scripts/build.sh`
 2. `make smoke`
 3. `make handnet-smoke` if you plan to use HandNet data
-4. the examples in [examples/README.md](/home/aaron/repos/tea/examples/README.md)
+4. the examples in [examples/README.md](examples/README.md)
 
 ## Troubleshooting
 
