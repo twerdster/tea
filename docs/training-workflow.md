@@ -53,12 +53,12 @@ The host then reduces those per-feature results and updates the tree state for t
 
 Tea distinguishes between:
 
-- `maxDepth`: the depth you want to train to
+- `maxDepth`: zero-based split level; `d` means `d+1` decisions (`19` for 20)
 - `foldingDepth`: the depth at which histogram work is folded for device-side processing
 
 The folding depth changes how histogram storage and passes over node subsets are organized. In practice, it is a performance parameter, not just a semantic tree-depth parameter.
 
-For shallow verified runs, using `foldingDepth == maxDepth` is the easiest maintained path.
+Shallow examples can use `foldingDepth == maxDepth`; deeper runs can use a lower folding depth to bound histogram buffers. Both folded and unfolded paths have regression coverage. Require `0 <= foldingDepth <= maxDepth <= 20`.
 
 ## Why This Can Be Fast
 
@@ -70,12 +70,14 @@ Tea's performance comes from three ideas working together:
 
 That makes it particularly useful when the expensive part of training is evaluating large numbers of candidate features against a large sample set.
 
-## Known Limits
+## Limits and deep training
 
-Tea is an older research codebase. The repository now has a clean maintained path, but you should still treat these areas carefully:
+One invocation trains one tree; the tree number selects its output filename and
+is not an RNG seed. There is no native minimum-leaf-size or pruning option.
+Three diverse trees need independent reproducible feature/sample banks.
 
-- very deep trees
-- large historical benchmark configurations that were never part of modern CI
-- application-level evaluation beyond the current smoke and converter tests
-
-For supported verification, stay close to the testing and benchmarking flows documented in this site.
+The repaired native path has independent CPU/GPU regression coverage, including
+the full 20-decision dense model. This does not establish application accuracy.
+Use [deep training](deep-training.md) for bounded queueing, memory, atomic depth
+checkpoints and validation selection. Use natural-distribution held-out data for
+segmentation/localization metrics rather than training self-success.

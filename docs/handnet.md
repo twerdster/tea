@@ -1,166 +1,148 @@
 # HandNet
 
-Tea now has a maintained Python path for turning HandNet `Data_*.mat` files into native Tea datasets.
+The Python converter reads HandNet `Data_*.mat` frames and writes native Tea
+feature columns. The [deep training workflow](deep-training.md) covers validated
+20-decision training, three-tree ensembles and held-out evaluation.
 
-This replaces the old MATLAB/MEX preprocessing path. The useful behavior was ported into:
+## Labels and sampling
 
-- `scripts/handnet_to_tea.py`
-- `tests/run_handnet_converter_test.py`
+The default seven modeled classes are raw HandNet labels `1..7` minus one:
+thumb, index, middle, ring, pinky, palm and wrist. Raw label `0` is excluded.
+Positive centre depth is required. Seven-class inference needs a foreground
+mask or detector because it has no learned background class.
 
-## What The Converter Does
+`--include-background` also samples positive-depth raw label `0`, mapping it to
+modeled class `7` (background). An eight-class manifest reserves output label
+`8` for invalid/excluded centres; learned background `7`, invalid centre `8` and
+unknown/no-vote `255` are distinct. Zero-depth centres are never trained.
 
-The converter reads HandNet frames containing at least:
+`--sampling uniform` samples eligible pixels uniformly. `--sampling balanced`
+caps each visible class without replacement. With eight classes and
+`--samples-per-frame 512`, each class has a per-frame cap of 64. Missing/small
+classes contribute fewer samples; no duplicates are inserted to meet a quota.
+`--class-samples` accepts explicit seven/eight comma-separated class caps.
+Actual class histograms and sample counts are recorded in metadata.
 
-- `depth`
-- `lbl`
+`--seed` controls feature coordinates, `--frame-seed` selects frames without
+replacement, and `--sampling-seed` selects pixels reproducibly by frame identity.
+Keep frame/pixel seeds and manifests fixed when comparing feature scales.
+`--sample-alignment 1` preserves every selected pixel with the repaired trainer;
+the default alignment of four is retained for compatibility with older Tea.
 
-It then:
+## Feature definition and scale
 
-- samples pixels where `lbl >= 1`
-- converts labels from HandNet's `1..7` range to Tea's zero-based `0..6` range
-- generates the historical radial depth-difference feature coordinates
-- computes one Tea feature-column file per generated feature
-- writes Tea threshold metadata, coordinates, poses, labels, and JSON metadata
+Depths are millimetres; coordinates are pixel·millimetres. For a centre `(r,c,z)`,
+each neighbour is obtained by **float32** evaluation of the complete sum
+`r + offset_r/z` or `c + offset_c/z`, then truncation toward zero. Adding a
+separately truncated offset gives different pixels. Do not zero raw depth
+outside a foreground mask: masks restrict queried centres only.
 
-The output directory contains:
+For `F_CHAR`, valid depth differences use
+`ceil(clamp((d1-d2)/250*127, -127, 127))`. A missing/OOB first neighbour gives
+`+127`, a missing second neighbour gives `-127`, and both missing gives zero.
+The native reference profile is `float32-complete-sum`.
 
-```text
-Labels.lbl
-Threshholds.thr
-Coords.co
-Poses.pose
-F_0000.feat
-F_0001.feat
-...
-handnet_metadata.json
-```
+The historical MATLAB generator used probe size **50**. The maintained converter
+now defaults to **50000**, a spatial-scale hypothesis for raw millimetre depths,
+not a recovered correction to the historical setting. Compare explicit probes
+`50`, `5000`, `25000` and `50000` on validation data within the experiment budget.
+At 450 mm depth their maximum radial offsets are approximately 0.056, 5.56,
+27.78 and 55.56 pixels. Even subpixel negative offsets can reach a neighbouring
+pixel because truncation follows the complete sum. The best scale has not been
+established by the trainer correctness tests.
 
-## Install Tooling
+Feature banks generated before the float32 complete-sum repair must be
+regenerated. Reuse a tree's exact `Coords.co` for all validation, test and deployed
+inference; generating another bank with an assumed equivalent seed is insufficient.
 
-Install the Python dependencies:
+## Bounded conversion
 
-```bash
-python3 -m pip install -r requirements-tools.txt
-```
+Install NumPy/SciPy with `python -m pip install -r requirements-tools.txt`.
+RAR input also requires `bsdtar`; ZIP and extracted directories are supported.
+For large RAR subsets, extract selected files once before conversion rather than
+reopening the archive for each frame.
 
-For `.rar` archives such as `TrainData.rar`, the converter also needs `bsdtar` on `PATH`. `.zip` archives are handled with Python's standard library.
-
-## Convert A Dataset
-
-Example using a validation archive:
-
-```bash
-python3 scripts/handnet_to_tea.py \
-  --archive /path/to/ValidationData.zip \
-  --output /tmp/tea-handnet-validation \
-  --features 200 \
-  --feature-type F_CHAR \
-  --samples-per-frame 2000 \
-  --force
-```
-
-The `--samples-per-frame` cap is optional. It is useful for bounded experiments because full pixel-level HandNet datasets can become very large.
-
-## Large TrainData Slices
-
-`TrainData.rar` can be passed directly to the converter, but large slices are much faster if you extract the selected `.mat` files once and convert the extracted directory. RAR random access is expensive when each frame is read separately.
-
-Example: extract the first 10,000 training frames:
+A bounded eight-class pilot conversion:
 
 ```bash
-python3 - <<'PY'
-import subprocess
-from pathlib import Path
-
-archive = Path("/path/to/TrainData.rar")
-out = Path("/tmp/tea-handnet-train-10000-names.txt")
-result = subprocess.run(["bsdtar", "-tf", str(archive)], check=True, capture_output=True, text=True)
-names = [line for line in result.stdout.splitlines() if line.endswith(".mat")][:10000]
-out.write_text("\n".join(names) + "\n")
-print(len(names), names[0], names[-1])
-PY
-
-mkdir -p /tmp/tea-handnet-train-10000-extracted
-bsdtar -xf /path/to/TrainData.rar \
-  -C /tmp/tea-handnet-train-10000-extracted \
-  -T /tmp/tea-handnet-train-10000-names.txt
+python scripts/handnet_to_tea.py \
+  --archive /data/HandNet/TrainData --output /work/tea/pilot-25000 \
+  --split train --features 1200 --probe-size 25000 --seed 101 \
+  --frame-seed 20261115 --max-files 2000 \
+  --sampling balanced --include-background --samples-per-frame 512 \
+  --sampling-seed 101 --sample-alignment 1 --max-output-gib 4
 ```
 
-Convert that extracted slice:
+The output limit is an upper bound, checked with free space before feature
+writing. Default `--max-output-gib` is 100; a larger bank needs an explicit limit
+and verified storage. Keep source archives read-only and use a new task-scoped
+output directory. `--force` explicitly replaces converter outputs and is not a
+run-recovery mechanism.
+
+Outputs include:
+
+| File | Meaning |
+| --- | --- |
+| `F_NNNN.feat` | One feature column, one value per selected pixel |
+| `Labels.lbl` | Little-endian uint16 modeled class per sample |
+| `Coords.co` | Little-endian float32 `(row1,col1,row2,col2)` records |
+| `Threshholds.thr` | Three float32 threshold metadata values per feature |
+| `Poses.pose` | uint32 frame-record index per sample |
+| `Pixels.pix` | uint16 `(row,col)` per sample |
+| `frames.json` | Exact source frame identities, sample ranges and split |
+| `handnet_metadata.json` | Completion, sample/class counts, seeds, feature profile and coordinate checksum |
+
+Use `metadata["samples"]` as Tea's sample count. Requested frames multiplied by
+requested pixels is only an upper bound. A successful metadata file has
+`complete:true`; interruption must not be mistaken for a completed dataset.
+
+## Freeze splits and reuse coordinates
+
+`--frame-manifest /path/to/frames.json` reuses the exact selected frames and checks
+split/source identities. `--manifest-only` records membership without features.
+`--coords /path/to/Coords.co` reuses the exact bank and infers its feature count.
+For a paired scale comparison, reuse the same training frame manifest and pixel
+sampling seed/quotas while changing the explicit probe size. For evaluation of
+one bank, reuse its coordinates across held-out splits.
+
+Official HandNet splits are randomized frame splits. Session, global index and
+frame index do not establish independent participants. Report official held-out
+frame evaluation honestly; subject-independent generalization needs verified
+subject grouping. Pass every training `frames.json` to evaluation so known
+matching global frame IDs are rejected.
+
+## Train and evaluate
+
+Tea CLI depth is zero based: `19` means **20 split decisions**. Tree indices only
+select filenames; they are not seeds. See [deep training](deep-training.md) for
+memory bounds, atomic depth checkpoints and independent tree diversity.
 
 ```bash
-python3 scripts/handnet_to_tea.py \
-  --archive /tmp/tea-handnet-train-10000-extracted/TrainData \
-  --output /tmp/tea-handnet-train-10000-d8 \
-  --features 200 \
-  --feature-type F_CHAR \
-  --samples-per-frame 2000 \
-  --force
+python scripts/tea_model.py inspect --manifest /models/forest.json
+python scripts/tea_model.py evaluate \
+  --manifest /models/forest.json --archive /data/HandNet/ValidationData \
+  --split validation --output /results/validation.json \
+  --max-frames 300 --frame-seed 420 --localize --foreground none \
+  --training-manifest /work/tea/pilot-25000/frames.json
 ```
 
-Then estimate and train a depth-8 tree:
+`--foreground none` queries all positive-depth centres and is appropriate for a
+forest with learned background. The independent `near-component` depth heuristic
+and labeled-hand `oracle` mode are separate evaluation conditions; oracle masks
+must be named as such. Foreground masks never modify neighbour depth values.
 
-```bash
-python3 scripts/estimate_training_memory.py \
-  --dataset /tmp/tea-handnet-train-10000-d8 \
-  --max-depth 8 \
-  --folding-depth 8 \
-  --feature-type F_CHAR \
-  --vram-cap-mb 500 \
-  --require-fit
+Compare hand-class macro IoU, per-class recall/precision and fingertip localization
+recall at 10/15/20 mm, counting missed present fingertips as failures. Also report
+foreground false positives and localization coverage. Training self-success and
+label-centroid agreement do not establish anatomical localization accuracy.
+Select scales/depths/thresholds on validation; use untouched test data only for
+final metrics after configuration is frozen.
 
-./Tea 200 32 8 8 F_CHAR <samples> 8 0 0 W_ONES \
-  /tmp/tea-handnet-train-10000-d8/ handnet_train_10000_d8 0 LOG0 \
-  "HandNet TrainData 10000-frame depth-8 test"
-```
+## Tests and prior results
 
-During modernization, this exact scale was exercised on a 10,000-frame TrainData slice with 19,949,016 samples and 200 `F_CHAR` features. The depth-8 memory estimate was about 110 MB per device, and the single-tree run completed successfully. The final self-success matched the dominant class rate, which is expected for raw imbalanced pixel labels.
-
-## Estimate Training Memory
-
-Before running Tea, estimate the per-device GPU memory requirement:
-
-```bash
-python3 scripts/estimate_training_memory.py \
-  --dataset /tmp/tea-handnet-validation \
-  --max-depth 3 \
-  --folding-depth 3 \
-  --feature-type F_CHAR \
-  --vram-cap-mb 500 \
-  --require-fit
-```
-
-This reads `Labels.lbl`, infers sample and class counts, asks `nvidia-smi` for currently free memory, and exits nonzero if the run is over the configured cap or currently free VRAM.
-
-## Train A Tree
-
-Read the sample count from the converter metadata:
-
-```bash
-python3 - <<'PY'
-import json
-print(json.load(open("/tmp/tea-handnet-validation/handnet_metadata.json"))["samples"])
-PY
-```
-
-Then pass that sample count to Tea:
-
-```bash
-./Tea 200 32 3 3 F_CHAR <samples> 8 0 0 W_ONES \
-  /tmp/tea-handnet-validation/ handnet_validation_d3 0 LOG0 \
-  "HandNet validation depth-3 test"
-```
-
-## Converter Smoke Test
-
-The repo includes a no-data HandNet converter test. It creates a tiny synthetic HandNet-style `.zip`, converts it, estimates memory, and runs Tea:
-
-```bash
-make handnet-smoke
-```
-
-This is the maintained test for the HandNet conversion path. Real HandNet archive runs are useful integration tests, but they are too large for default CI-style checks.
-
-## Accuracy Note
-
-A depth-3 run on raw pixel labels is a data-path validation, not a full application benchmark. HandNet labels are highly imbalanced at the pixel level, so a shallow tree can report self-success near the dominant class rate. Meaningful application evaluation should add held-out prediction tooling, class-balancing decisions, deeper trees or ensembles, and task-specific metrics.
+`make handnet-smoke` tests generated conversion data. Native routing, histogram
+and serialization correctness are checked by the [trainer tests](https://github.com/twerdster/tea/blob/main/tests/README.md).
+The earlier modernization run completed CLI depth 8 on 10,000 frames and
+19,949,016 samples, but its self-success matched the dominant class rate. It was
+executed before the routing/histogram repairs and does not validate classifier
+quality. No new HandNet accuracy claim follows from the repaired synthetic tests.

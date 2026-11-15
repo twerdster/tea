@@ -11,8 +11,15 @@ pre-setup:
 Tea: pre-setup $(objects)
 	${NVCC} $(NVCCFLAGS) $(objects) -o Tea
 
-build/%.o: %.cu 
+build/%.o: %.cu $(wildcard *.h) $(wildcard *.cuh)
 	${NVCC} $(NVCCFLAGS) -x cu -I. -dc $< -o $@
+
+trainer-kernels: pre-setup build/histograms.o build/entropies.o build/utilities.o tests/trainer_kernels_test.cu
+	${NVCC} $(NVCCFLAGS) -I. tests/trainer_kernels_test.cu build/histograms.o build/entropies.o build/utilities.o -o build/trainer_kernels_test
+	./build/trainer_kernels_test
+
+trainer-regression: Tea
+	${PYTHON} tests/trainer_regression.py --tea ./Tea
 
 smoke: Tea
 	${PYTHON} tests/run_smoke_tests.py --tea ./Tea
@@ -34,4 +41,4 @@ help:
 clean:
 	rm -f build/*.o Tea
 
-.PHONY: Tea clean smoke handnet-smoke help
+.PHONY: Tea clean smoke handnet-smoke help trainer-kernels trainer-regression

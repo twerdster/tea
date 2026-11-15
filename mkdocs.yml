@@ -40,5 +40,6 @@ nav:
   - Testing: testing.md
   - Benchmarking: benchmarking.md
   - HandNet: handnet.md
+  - Deep Training: deep-training.md
   - References: references.md
   - Maintaining This Site: docs-site.md

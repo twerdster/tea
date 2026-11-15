@@ -10,17 +10,17 @@
 #include <cuda_runtime.h>
 
 // Histograms are generated per depth level
-template <NodeType ntype, class Ftype> 
-__global__ 
+template <NodeType ntype, class Ftype>
+__global__
 	void _buildHistogram(float thresh, const Ftype *d_feature, uint *d_histogram, const RFTrainNode *d_nodes, const Sample *d_sample, const uint numClasses, const uint dataCount, const uint nodeBegin,const uint nodeEnd, const int idxBegin)
-{   
+{
 	int idx = ( blockIdx.x*gridDim.y + blockIdx.y ) * blockDim.x + threadIdx.x;
-	
-	if (idx < dataCount)   
+
+	if (idx < dataCount)
 	{
-		if ( ntype == PARENT_NODE || CHILD(d_feature[idx], thresh) ) 
+		if ( ntype == PARENT_NODE || CHILD(d_feature[idx], thresh) )
 		{
-			int node = binarySearch(idx, d_nodes, nodeBegin, nodeEnd, idxBegin);			
+			int node = binarySearch(idx, d_nodes, nodeBegin, nodeEnd, idxBegin);
 			atomicAdd( &d_histogram[ (node - nodeBegin) * numClasses + LABEL(d_sample[idx])  ]  , 1 ); // NOTE: will overflow for more than 4bn samples.
 		}
 	}
@@ -29,14 +29,19 @@ __global__
 
 template <NodeType ntype, class Ftype>
 double buildHistogram(float thresh, const Ftype *d_feature, GPUDevice *gpuDevice, const RFTrainNode *nodes, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream)
-{   
+{
 	int idxBegin = nodes[nodeBegin].idxBegin; // Samples begin index
 	int idxEnd = nodes[nodeEnd].idxEnd; //Samples end index
 	int dataCount = idxEnd - idxBegin + 1;
 	cudaError ce = cudaGetLastError();
 
-	if (dataCount<=0) 
-		return 0;
+	if (dataCount<=0) {
+        // Folded empty batches must not reuse the preceding batch counts.
+        teaCudaCheck(cudaMemsetAsync(gpuDevice->histograms() +
+            (ntype == CHILD_NODE ? gpuDevice->histWords()/2 : 0),
+            0, gpuDevice->histBytes()/2, stream), "clear empty histogram");
+        return 0;
+    }
 
 	Clock clk;
 
@@ -47,7 +52,7 @@ double buildHistogram(float thresh, const Ftype *d_feature, GPUDevice *gpuDevice
 
 	const float THREADS = 256;
 	const float BLOCKS = ceil((dataCount/1.0f)/THREADS);
-	uint sqrtVal = ceil(sqrt(BLOCKS));        
+	uint sqrtVal = ceil(sqrt(BLOCKS));
 	dim3 numBlocks(sqrtVal,sqrtVal);
 	dim3 numThreads(THREADS);
 
@@ -56,16 +61,16 @@ double buildHistogram(float thresh, const Ftype *d_feature, GPUDevice *gpuDevice
 
 	d_histogram  =  gpuDevice->histograms()  + ((ntype == CHILD_NODE)? gpuDevice->histWords()/2 : 0);
 
-	cudaMemsetAsync(d_histogram, 0, gpuDevice->histBytes()/2, stream); 		
+	cudaMemsetAsync(d_histogram, 0, gpuDevice->histBytes()/2, stream);
 
-	_buildHistogram<ntype, Ftype> <<< numBlocks, numThreads , 0, stream >>> 
-		(thresh, d_feature + idxBegin, d_histogram, d_nodes, d_sample  + idxBegin, numClasses, dataCount, nodeBegin,nodeEnd,idxBegin); 
+	_buildHistogram<ntype, Ftype> <<< numBlocks, numThreads , 0, stream >>>
+		(thresh, d_feature + idxBegin, d_histogram, d_nodes, d_sample  + idxBegin, numClasses, dataCount, nodeBegin,nodeEnd,idxBegin);
 
 	cudaStreamSynchronize(stream);
-	if (cudaGetLastError()!=cudaSuccess){ 
+	if (cudaGetLastError()!=cudaSuccess){
 		FILE_LOG(logERROR) << "Error occurred in buildHistogram";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
+		discardSystemResult("pause");
 	}
 	return clk.toc();
 }
@@ -77,14 +82,14 @@ inline __device__ void addByte(uchar *s_ThreadBase, uint data){
 }
 
 template <NodeType ntype, class Ftype, class Ftype4>
-__global__ 
+__global__
 	void _buildHistogram64(const float thresh, const Ftype *d_feature, uint *d_PartialHistograms, const Sample *d_sample, const uint numClasses, const uint dataCount)
 {
 		//Encode thread index in order to avoid bank conflicts in s_Hist[] access:
 		//each group of SHARED_MEMORY_BANKS threads accesses consecutive shared memory banks
 		//and the same bytes [0..3] within the banks
 		//Because of this permutation block size should be a multiple of 4 * SHARED_MEMORY_BANKS
-		const uint threadPos = 
+		const uint threadPos =
 			( (threadIdx.x & ~(SHARED_MEMORY_BANKS * 4 - 1)) << 0 ) | // leave bits 7,8 in 7,8
 			( (threadIdx.x &  (SHARED_MEMORY_BANKS     - 1)) << 2 ) | // move 1,2,3,4 to 3,4,5,6
 			( (threadIdx.x &  (SHARED_MEMORY_BANKS * 3    )) >> 5 ); // move bits 5,6 to positions 1,2
@@ -101,25 +106,14 @@ __global__
 		//Read data from global memory and submit to the shared-memory histogram
 		//Since histogram counters are byte-sized, every single thread can't do more than 255 submission
 		__syncthreads();
-		for(uint pos = UMAD(blockIdx.x, blockDim.x, threadIdx.x); pos < dataCount/sizeof(SampleType4); pos += UMUL(blockDim.x, gridDim.x))
-		{		
-			/*			
-			for (uint szPos = 0; szPos < sizeof(SampleType4) && pos*sizeof(SampleType4)+szPos < dataCount; szPos++)
-			{  
-				if (ntype == PARENT_NODE || CHILD(d_feature[pos*sizeof(SampleType4)+szPos], thresh) )			
-					addByte(s_ThreadBase, LABEL(d_sample[pos*sizeof(SampleType4)+szPos]) ); 
-			}*/
-			
-			const SampleType4 sample = ((SampleType4*)d_sample)[pos];			
-			const Ftype4 feature = ((Ftype4*)d_feature)[pos];
-						
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) ); 			
-		}
+		// Scalar accesses support arbitrary node starts and sample tails.
+        for (uint pos = blockIdx.x*blockDim.x + threadIdx.x;
+             pos < dataCount; pos += blockDim.x*gridDim.x) {
+            if (ntype == PARENT_NODE || CHILD(d_feature[pos], thresh))
+                addByte(s_ThreadBase, LABEL(d_sample[pos]));
+        }
 
-		//Accumulate per-thread histograms into per-block and write to global memory
+        //Accumulate per-thread histograms into per-block and write to global memory
 		__syncthreads();
 		if(threadIdx.x < numClasses)
 		{
@@ -130,7 +124,7 @@ __global__
 
 #pragma unroll
 			for(uint i = 0; i < (HISTOGRAM64_THREADBLOCK_SIZE / 4); i++){
-				sum += 
+				sum +=
 					s_HistBase[pos + 0] +
 					s_HistBase[pos + 1] +
 					s_HistBase[pos + 2] +
@@ -143,7 +137,7 @@ __global__
 }
 
 template <NodeType ntype, class Ftype, class Ftype4>
-__global__ 
+__global__
 	void _buildHistogram256(const float thresh, const Ftype *d_feature, uint *d_PartialHistograms, const Sample *d_sample, const uint numClasses, const uint dataCount)
 {
 	//Per-warp subhistogram storage
@@ -156,24 +150,13 @@ __global__
 		s_Hist[threadIdx.x + i * HISTOGRAM256_THREADBLOCK_SIZE] = 0;
 
 	__syncthreads();
-	for(uint pos = UMAD(blockIdx.x, blockDim.x, threadIdx.x); pos < dataCount/sizeof(SampleType4); pos += UMUL(blockDim.x, gridDim.x))
-	{		
-		/*
-		for (uint szPos = 0; szPos < sizeof(SampleType4) && pos*sizeof(SampleType4)+szPos < dataCount; szPos++)
-		{        
-			if (ntype == PARENT_NODE || CHILD(d_feature[pos*sizeof(SampleType4)+szPos], thresh) )							
-			atomicAdd(s_WarpHist + (LABEL(d_sample[pos*sizeof(SampleType4)+szPos]) & 0xFFU), 1); 	
-		}	*/
-			const SampleType4 sample = ((SampleType4*)d_sample)[pos];			
-			const Ftype4 feature = ((Ftype4*)d_feature)[pos];
-						
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	atomicAdd(s_WarpHist + (LABEL(*(Sample*)&sample.x) & 0xFFU), 1); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	atomicAdd(s_WarpHist + (LABEL(*(Sample*)&sample.y) & 0xFFU), 1); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	atomicAdd(s_WarpHist + (LABEL(*(Sample*)&sample.z) & 0xFFU), 1); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	atomicAdd(s_WarpHist + (LABEL(*(Sample*)&sample.w) & 0xFFU), 1); 
-	}
+	for (uint pos = blockIdx.x*blockDim.x + threadIdx.x;
+         pos < dataCount; pos += blockDim.x*gridDim.x) {
+        if (ntype == PARENT_NODE || CHILD(d_feature[pos], thresh))
+            atomicAdd(s_WarpHist + LABEL(d_sample[pos]), 1);
+    }
 
-	//Merge per-warp histograms into per-block and write to global memory
+    //Merge per-warp histograms into per-block and write to global memory
 	__syncthreads();
 	for(uint bin = threadIdx.x; bin < numClasses; bin += HISTOGRAM256_THREADBLOCK_SIZE){
 		uint sum = 0;
@@ -186,10 +169,10 @@ __global__
 }
 
 // Merge output
-// Run one threadblock per bin; each threadbock adds up the same bin counter 
+// Run one threadblock per bin; each threadbock adds up the same bin counter
 // from every partial histogram. Reads are uncoalesced, but mergeHistogram64
 // takes only a fraction of total processing time
-__global__ 
+__global__
 	void _mergeHistogram( uint *d_Histogram, uint *d_PartialHistograms, const uint histogramCount, const uint numClasses)
 {
 	__shared__ uint data[MERGE_THREADBLOCK_SIZE];
@@ -211,7 +194,7 @@ __global__
 
 template <NodeType ntype, HistType htype, class Ftype, class Ftype4>
 double buildHistogramFast(float thresh, const Ftype *d_feature, GPUDevice *gpuDevice, const RFTrainNode *nodes, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream)
-{   	
+{
 	uint *d_histogram;
 	volatile  uint histogramCount;
 	const Sample *d_sample = gpuDevice->samples();
@@ -220,15 +203,15 @@ double buildHistogramFast(float thresh, const Ftype *d_feature, GPUDevice *gpuDe
 	uint *d_PartialHistograms = gpuDevice->partialHistograms();
 
 	d_histogram = gpuDevice->histograms()  + ((ntype == CHILD_NODE)?gpuDevice->histWords()/2:0);
-	cudaMemsetAsync(d_histogram, 0, gpuDevice->histBytes()/2, stream); 	
+	cudaMemsetAsync(d_histogram, 0, gpuDevice->histBytes()/2, stream);
 
 	Clock clk;
 	clk.tic();
 	cudaStreamSynchronize(stream);
 	int cnt=0;
-	
+
 	for ( int nIdx = 0; nIdx < nodeCount; nIdx++)
-	{ 
+	{
 		int idxBegin = nodes[nIdx + nodeBegin].idxBegin;	// Samples begin index
 		int idxEnd = nodes[nIdx + nodeBegin].idxEnd;		//Samples end index
 		int dataCount = idxEnd - idxBegin + 1;
@@ -238,53 +221,55 @@ double buildHistogramFast(float thresh, const Ftype *d_feature, GPUDevice *gpuDe
 		cnt++;
 		switch (htype)
 		{
-		case HIST_64:		
-			histogramCount = iDivUp(dataCount, HISTOGRAM64_THREADBLOCK_SIZE * iSnapDown(255, sizeof(SampleType4)));
-			_buildHistogram64<ntype, Ftype, Ftype4> <<< histogramCount, HISTOGRAM64_THREADBLOCK_SIZE, 0, stream >>>  
-				(thresh, d_feature + idxBegin, d_PartialHistograms, d_sample + idxBegin, numClasses, dataCount);	
+		case HIST_64:
+			histogramCount = iDivUp(dataCount, HISTOGRAM64_THREADBLOCK_SIZE * 255);
+			if (histogramCount > MAX_PARTIAL_HISTOGRAM64_COUNT)
+				throw std::overflow_error("Fast histogram partial storage exceeded; use smaller training sample count");
+			_buildHistogram64<ntype, Ftype, Ftype4> <<< histogramCount, HISTOGRAM64_THREADBLOCK_SIZE, 0, stream >>>
+				(thresh, d_feature + idxBegin, d_PartialHistograms, d_sample + idxBegin, numClasses, dataCount);
 			break;
 		case HIST_256:
 			histogramCount = PARTIAL_HISTOGRAM256_COUNT;
 			_buildHistogram256<ntype, Ftype, Ftype4> <<< histogramCount, HISTOGRAM256_THREADBLOCK_SIZE, 0, stream>>>
 				(thresh, d_feature + idxBegin, d_PartialHistograms, d_sample + idxBegin, numClasses, dataCount);
-			break;				
+			break;
 		}
 
-		_mergeHistogram<<< numClasses, MERGE_THREADBLOCK_SIZE, 0 , stream>>> 
+		_mergeHistogram<<< numClasses, MERGE_THREADBLOCK_SIZE, 0 , stream>>>
 			(d_histogram, d_PartialHistograms, histogramCount, numClasses);
-		
+
 	}
 
-	cudaStreamSynchronize(stream);	
-	if (cudaGetLastError()!=cudaSuccess){ 
+	cudaStreamSynchronize(stream);
+	if (cudaGetLastError()!=cudaSuccess){
 		FILE_LOG(logERROR) << "Error occurred in buildHistogramFast";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
+		discardSystemResult("pause");
 	}
 	return clk.toc();
 }
 
-template <class Ftype, class Ftype4 > 
-double buildHistogram(NodeType ntype, HistType htype, float thresh, const Ftype *d_feature, GPUDevice *gpuDevice, const RFTrainNode *nodes, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream) 
-{ 
-	if (ntype == CHILD_NODE) 
-		switch (htype) 
-		{ 
-		case HIST_64:		return buildHistogramFast<CHILD_NODE, HIST_64, Ftype, Ftype4>	(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);	 
-		case HIST_256:		return buildHistogramFast<CHILD_NODE, HIST_256, Ftype, Ftype4>	(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);	 
-		case HIST_REGULAR:	return buildHistogram<CHILD_NODE, Ftype>						(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);	 
-		} 
-		 
-	if (ntype == PARENT_NODE) 
-		switch (htype) 
-		{ 
-		case HIST_64:		return buildHistogramFast<PARENT_NODE, HIST_64, Ftype, Ftype4>  (thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream); 
-		case HIST_256:		return buildHistogramFast<PARENT_NODE, HIST_256, Ftype, Ftype4> (thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);	 
-		case HIST_REGULAR:	return buildHistogram<PARENT_NODE, Ftype>						(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);	 
-		} 
-		 
-	return -1; 
-} 
+template <class Ftype, class Ftype4 >
+double buildHistogram(NodeType ntype, HistType htype, float thresh, const Ftype *d_feature, GPUDevice *gpuDevice, const RFTrainNode *nodes, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream)
+{
+	if (ntype == CHILD_NODE)
+		switch (htype)
+		{
+		case HIST_64:		return buildHistogramFast<CHILD_NODE, HIST_64, Ftype, Ftype4>	(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		case HIST_256:		return buildHistogramFast<CHILD_NODE, HIST_256, Ftype, Ftype4>	(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		case HIST_REGULAR:	return buildHistogram<CHILD_NODE, Ftype>						(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		}
+
+	if (ntype == PARENT_NODE)
+		switch (htype)
+		{
+		case HIST_64:		return buildHistogramFast<PARENT_NODE, HIST_64, Ftype, Ftype4>  (thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		case HIST_256:		return buildHistogramFast<PARENT_NODE, HIST_256, Ftype, Ftype4> (thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		case HIST_REGULAR:	return buildHistogram<PARENT_NODE, Ftype>						(thresh, d_feature, gpuDevice, nodes, nodeBegin, nodeEnd, stream);
+		}
+
+	return -1;
+}
 
 #define MAKE_BUILD_HISTOGRAM(ftype) \
 	double buildHistogram(NodeType ntype, HistType htype, float thresh, const ftype *d_feature, GPUDevice *gpuDevice, \
@@ -296,7 +281,7 @@ MAKE_BUILD_HISTOGRAM(short);
 MAKE_BUILD_HISTOGRAM(int);
 MAKE_BUILD_HISTOGRAM(float);
 /*
-int main (int argc, char ** argv) { 
+int main (int argc, char ** argv) {
 double a;
 cudaStream_t stream;
 RFTrainNode *nodes=0;
@@ -311,32 +296,32 @@ a=buildHistogram(PARENT_NODE, HIST_64, 0, _d_data, 0, nodes, 0, 0,stream);
 			uchar4 sample;
 			const uint4 feature_ = ((uint4*)d_feature)[pos];
 			char4 feature;
-			
+
 			sample = *(uchar4*)&(sample_.x);
 			feature = *(char4*)&(feature_.x);
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) ); 	
+			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) );
 sample = *(uchar4*)&(sample_.y);
 			feature = *(char4*)&(feature_.y);
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) ); 
+			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) );
 			sample = *(uchar4*)&(sample_.z);
 			feature = *(char4*)&(feature_.z);
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) ); 
+			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) );
 			sample = *(uchar4*)&(sample_.w);
 			feature = *(char4*)&(feature_.w);
-			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) ); 
-			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) ); 
-			
+			if ( (ntype == PARENT_NODE || CHILD(feature.x, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.x) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.y, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.y) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.z, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.z) );
+			if ( (ntype == PARENT_NODE || CHILD(feature.w, thresh) ) )	addByte(s_ThreadBase, LABEL(*(Sample*)&sample.w) );
+
 
 */
 /*
@@ -349,46 +334,46 @@ sample = *(uchar4*)&(sample_.y);
 
 
 // Histograms are generated per depth level
-template <NodeType ntype> 
-__global__ 
+template <NodeType ntype>
+__global__
 	void _buildHistogram(float thresh, const SAMPLE_TYPE *d_feature, uint *d_histogram, const RFTrainNode *d_nodes, const Sample *d_sample, const uint numClasses, const uint dataCount, const uint nodeBegin,const uint nodeEnd, const int idxBegin)
-{   
+{
 	int idx = ( blockIdx.x*gridDim.y + blockIdx.y ) * blockDim.x + threadIdx.x;
 
-	if (idx < dataCount)   
+	if (idx < dataCount)
 	{
 			const uint4 sample_ = ((uint4*)d_sample)[idx];
 			uchar4 sample;
 			const uint4 feature_ = ((uint4*)d_feature)[idx];
 			char4 feature;
-			
+
 			sample = *(uchar4*)&(sample_.x);
 			feature = *(char4*)&(feature_.x);
 			ADD(feature.x,*(Sample*)&sample.x, 0);
-			ADD(feature.y,*(Sample*)&sample.y, 1);			
-			ADD(feature.z,*(Sample*)&sample.z, 2);			
-			ADD(feature.w,*(Sample*)&sample.w, 3);	
+			ADD(feature.y,*(Sample*)&sample.y, 1);
+			ADD(feature.z,*(Sample*)&sample.z, 2);
+			ADD(feature.w,*(Sample*)&sample.w, 3);
 
 			sample = *(uchar4*)&(sample_.y);
 			feature = *(char4*)&(feature_.y);
 			ADD(feature.x,*(Sample*)&sample.x, 4);
-			ADD(feature.y,*(Sample*)&sample.y, 5);			
-			ADD(feature.z,*(Sample*)&sample.z, 6);			
-			ADD(feature.w,*(Sample*)&sample.w, 7);	
+			ADD(feature.y,*(Sample*)&sample.y, 5);
+			ADD(feature.z,*(Sample*)&sample.z, 6);
+			ADD(feature.w,*(Sample*)&sample.w, 7);
 
 			sample = *(uchar4*)&(sample_.z);
 			feature = *(char4*)&(feature_.z);
 			ADD(feature.x,*(Sample*)&sample.x, 8);
-			ADD(feature.y,*(Sample*)&sample.y, 9);			
-			ADD(feature.z,*(Sample*)&sample.z, 10);			
-			ADD(feature.w,*(Sample*)&sample.w, 11);	
+			ADD(feature.y,*(Sample*)&sample.y, 9);
+			ADD(feature.z,*(Sample*)&sample.z, 10);
+			ADD(feature.w,*(Sample*)&sample.w, 11);
 
 			sample = *(uchar4*)&(sample_.w);
 			feature = *(char4*)&(feature_.w);
 			ADD(feature.x,*(Sample*)&sample.x, 12);
-			ADD(feature.y,*(Sample*)&sample.y, 13);			
-			ADD(feature.z,*(Sample*)&sample.z, 14);			
-			ADD(feature.w,*(Sample*)&sample.w, 15);	
+			ADD(feature.y,*(Sample*)&sample.y, 13);
+			ADD(feature.z,*(Sample*)&sample.z, 14);
+			ADD(feature.w,*(Sample*)&sample.w, 15);
 	}
 }
 */

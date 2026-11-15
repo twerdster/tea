@@ -8,11 +8,11 @@ Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datas
 
 - a modernized host-side threading layer based on the C++ standard library
 - a supported local build flow with both `make` and CMake
-- shallow automated smoke tests for depth `0` and depth `1`
+- independent CPU/GPU routing, histogram and serialization regressions, including 20-decision trees
 - small generated example datasets and copy-pasteable example commands
-- Python dataset utilities for expansion, benchmarking, memory estimation, and HandNet conversion
+- reproducible class-aware HandNet conversion, native forest inference and held-out evaluation
 
-The current supported workflow is intentionally focused on buildability, shallow correctness checks, and ease of setup. Historical MATLAB tooling has been replaced by maintained Python-based testing, benchmarking, and HandNet conversion utilities.
+The maintained workflow covers buildability, native trainer correctness and reproducible dataset/inference contracts. Historical MATLAB tooling is replaced by Python conversion and evaluation utilities. Real model quality requires held-out evaluation; synthetic success is not an accuracy claim.
 
 ## Documentation
 
@@ -46,7 +46,7 @@ The repository has been updated to build on a modern Linux toolchain. The active
 - run the supported smoke tests
 - use the small example datasets to verify shallow-tree training
 
-The supported automated test coverage currently stops at depth `1`. That is deliberate: it validates the modernized build/runtime path without immediately stepping into older deeper-tree edge cases that deserve separate work.
+Independent CPU/GPU regressions now cover odd/singleton routing, histogram tails, deep empty branches, streaming feature pools, weighted split entropy and serialized posteriors. A bounded nine-sample test exercises the full 20-decision dense model. See [the test workflow](tests/README.md). Exactly 20 decisions uses CLI `maxDepth=19`.
 
 ## Requirements
 
@@ -154,7 +154,7 @@ TEA_ENABLE_OPENMP=OFF bash scripts/build.sh
 
 ## Smoke Tests
 
-The supported smoke-test runner is [tests/run_smoke_tests.py](/home/aaron/repos/tea/tests/run_smoke_tests.py).
+The supported smoke-test runner is [tests/run_smoke_tests.py](tests/run_smoke_tests.py).
 
 Run it directly:
 
@@ -186,55 +186,51 @@ The runner checks:
 - final predicted labels match the known labels exactly
 - the log reports `Depth X: 100.0000%` at the target depth
 
-More detail is in [tests/README.md](/home/aaron/repos/tea/tests/README.md).
+More detail is in [tests/README.md](tests/README.md).
 
-## HandNet Conversion
+## HandNet conversion and deep forests
 
-The useful HandNet MATLAB/MEX preprocessing path has been ported to [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py).
-
-Install the converter dependencies:
-
-```bash
-python3 -m pip install -r requirements-tools.txt
-```
-
-Convert a HandNet archive into Tea format:
+The maintained converter supports frozen frame identities, reusable coordinates,
+separate frame/pixel/feature seeds and class-aware sampling. An eight-class pilot
+can learn positive-depth background as well as the seven hand classes:
 
 ```bash
-python3 scripts/handnet_to_tea.py \
-  --archive /path/to/ValidationData.zip \
-  --output /tmp/tea-handnet-validation \
-  --features 200 \
-  --feature-type F_CHAR \
-  --samples-per-frame 2000 \
-  --force
+python scripts/handnet_to_tea.py \
+  --archive /data/HandNet/TrainData --output /work/tea/pilot-25000 \
+  --split train --features 1200 --probe-size 25000 --seed 101 \
+  --frame-seed 20261115 --max-files 2000 \
+  --sampling balanced --include-background --samples-per-frame 512 \
+  --sampling-seed 101 --sample-alignment 1 --max-output-gib 4
 ```
 
-For large `TrainData.rar` slices, extract the selected `Data_*.mat` files once with `bsdtar -T` and pass the extracted `TrainData/` directory to the converter. That is much faster than repeatedly reading individual files from the RAR archive. A documented depth-8 TrainData slice workflow is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+The historical probe 50 and scales 5000/25000/50000 are validation hypotheses;
+50000 is now the converter default, not an established best setting. Depths are
+millimetres and coordinates pixel·millimetres. Conversion and inference share
+float32 complete-sum coordinate arithmetic, truncation toward zero and the
+`ceil(clamp((d1-d2)/250*127,-127,127))` feature definition. Reuse each tree's exact
+`Coords.co` across splits and deployment.
 
-Estimate depth-3 training memory before running Tea:
+Tea trains one tree per invocation. CLI depth 19 means 20 split decisions;
+`treeNum` is a filename index, not a random seed. Three diverse trees require
+independently seeded banks/samples and a frozen forest manifest. Use the
+[deep-training workflow](docs/deep-training.md) for memory bounds, GPU queueing,
+atomic checkpoints and held-out model selection. The [HandNet guide](docs/handnet.md)
+details class semantics, natural-distribution evaluation and localization metrics.
 
 ```bash
-python3 scripts/estimate_training_memory.py \
-  --dataset /tmp/tea-handnet-validation \
-  --max-depth 3 \
-  --folding-depth 3 \
-  --feature-type F_CHAR \
-  --vram-cap-mb 500 \
-  --require-fit
+python scripts/tea_model.py inspect --manifest /models/forest.json
+python scripts/tea_model.py evaluate \
+  --manifest /models/forest.json --archive /data/HandNet/ValidationData \
+  --split validation --output /results/validation.json --localize --foreground none \
+  --training-manifest /work/tea/pilot-25000/frames.json
 ```
 
-Run the maintained no-data converter smoke test:
-
-```bash
-make handnet-smoke
-```
-
-More detail is in [docs/handnet.md](/home/aaron/repos/tea/docs/handnet.md).
+No new HandNet accuracy claim follows from trainer correctness checks. The earlier
+depth 8 modernization result matched the dominant class and predates native repairs.
 
 ## Dataset Utility
 
-[scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
+[scripts/expand_dataset.py](scripts/expand_dataset.py) can inspect and derive Tea-format datasets.
 
 Inspect an existing dataset:
 
@@ -257,7 +253,7 @@ That utility can:
 
 ## Benchmarking
 
-Use [scripts/benchmark.py](/home/aaron/repos/tea/scripts/benchmark.py) to generate bounded synthetic datasets, run Tea over sample/feature/depth sweeps, and write a CSV summary.
+Use [scripts/benchmark.py](scripts/benchmark.py) to generate bounded synthetic datasets, run Tea over sample/feature/depth sweeps, and write a CSV summary.
 
 Example:
 
@@ -281,7 +277,7 @@ That script:
 
 ## Manual Examples
 
-Additional copy-pasteable examples live in [examples/README.md](/home/aaron/repos/tea/examples/README.md).
+Additional copy-pasteable examples live in [examples/README.md](examples/README.md).
 
 ### Root-only Example
 
@@ -324,7 +320,7 @@ Tea expects a directory containing:
 
 The supported smoke-data generator writes exactly that structure, so it is the easiest reference for the on-disk layout:
 
-- [tests/gen_smoke_dataset.py](/home/aaron/repos/tea/tests/gen_smoke_dataset.py)
+- [tests/gen_smoke_dataset.py](tests/gen_smoke_dataset.py)
 
 ## Output Files
 
@@ -332,32 +328,34 @@ A training run writes:
 
 - `Tree_0000.tree`
   Serialized tree snapshot for the current build depth
+- `Tree_0000.depthDD.tree`
+  Immutable completed-depth model for validation and recovery evidence
 - `Tree_0000.tree.labels`
-  Predicted label per sample for that tree snapshot
+  Predicted training label per sample for that tree snapshot
 - `LogFile_<prefix>_0000.log`
   Run log with timing and self-success information
 
-Note that Tea snapshots the tree after each level and rewrites the same output filenames for the current run prefix.
+Current model/label files publish atomically after each level. Completed depth files are immutable; use a fresh run directory for a replacement. Depth files are inference checkpoints, not resumable training state. The model filename uses the tree index; the prefix selects the log.
 
 ## Repository Layout
 
-- [TreeBuilder.cu](/home/aaron/repos/tea/TreeBuilder.cu)
+- [TreeBuilder.cu](TreeBuilder.cu)
   Main training entry point
-- [histograms.cu](/home/aaron/repos/tea/histograms.cu), [entropies.cu](/home/aaron/repos/tea/entropies.cu), [utilities.cu](/home/aaron/repos/tea/utilities.cu)
+- [histograms.cu](histograms.cu), [entropies.cu](entropies.cu), [utilities.cu](utilities.cu)
   CUDA kernels and GPU-side utilities
-- [tests/README.md](/home/aaron/repos/tea/tests/README.md)
+- [tests/README.md](tests/README.md)
   Supported test workflow
-- [examples/README.md](/home/aaron/repos/tea/examples/README.md)
+- [examples/README.md](examples/README.md)
   Manual example commands
-- [scripts/expand_dataset.py](/home/aaron/repos/tea/scripts/expand_dataset.py)
+- [scripts/expand_dataset.py](scripts/expand_dataset.py)
   Dataset inspection and expansion helper
-- [scripts/handnet_to_tea.py](/home/aaron/repos/tea/scripts/handnet_to_tea.py)
+- [scripts/handnet_to_tea.py](scripts/handnet_to_tea.py)
   HandNet `.mat` archive converter
-- [scripts/estimate_training_memory.py](/home/aaron/repos/tea/scripts/estimate_training_memory.py)
+- [scripts/estimate_training_memory.py](scripts/estimate_training_memory.py)
   Standalone Tea GPU-memory estimator for existing datasets
-- [scripts/benchmark.py](/home/aaron/repos/tea/scripts/benchmark.py)
+- [scripts/benchmark.py](scripts/benchmark.py)
   Synthetic benchmark runner with a configurable VRAM cap
-- [HandNet/README.md](/home/aaron/repos/tea/HandNet/README.md)
+- [HandNet/README.md](HandNet/README.md)
   HandNet conversion notes; the old MATLAB/MEX files are no longer maintained
 
 ## Recommended Path
@@ -367,7 +365,7 @@ If you are starting fresh, use:
 1. `make Tea` or `bash scripts/build.sh`
 2. `make smoke`
 3. `make handnet-smoke` if you plan to use HandNet data
-4. the examples in [examples/README.md](/home/aaron/repos/tea/examples/README.md)
+4. the examples in [examples/README.md](examples/README.md)
 
 ## Troubleshooting
 
@@ -389,13 +387,10 @@ If OpenMP causes trouble in your environment, disable it:
 make Tea OPENMP_FLAGS=
 ```
 
-## Current Focus
+## Current focus
 
-The repository is now organized around:
-
-- clean builds on a modern toolchain
-- supported shallow smoke tests
-- maintained Python HandNet conversion
-- clear examples and setup
-
-The next layers of work after that are deeper regression coverage and longer legacy benchmark validation, but those are intentionally separate from the current easy-to-use path.
+The maintained workflow includes modern CUDA builds, independent CPU/GPU trainer
+regressions, reproducible class-aware HandNet conversion and a native forest
+reference shared with DepthTrack. Correctness coverage includes the full dense
+20-decision model and atomic per-depth checkpoints. Real model quality is evaluated
+on held-out data using the [deep-training workflow](docs/deep-training.md).

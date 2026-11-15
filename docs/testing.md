@@ -68,14 +68,22 @@ python3 tests/run_smoke_tests.py --tea ./Tea --case depth1-balanced
 python3 tests/run_smoke_tests.py --list
 ```
 
-## Why The Tests Stop At Depth 1
+## Native deep and weighted regression coverage
 
-The repository is an older research codebase. The current goal of the maintained test surface is:
+The generated shallow smoke cases remain fast build checks. The repaired trainer
+also has independent CPU/GPU kernel and full serialization regressions:
 
-- prove the modernized build still works
-- prove the supported dataset and runtime path still works
-- keep verification fast and repeatable
+```bash
+make trainer-kernels
+python tests/trainer_regression.py --tea ./Tea
+python tests/trainer_depth20.py --tea ./Tea
+```
 
-That is why the supported automated path stops at shallow trees for now.
+Coverage includes odd/singleton partitioning, all histogram methods and feature
+types, folded empty nodes, streaming feature reloads, weighted entropy and every
+serialized posterior. The bounded nine-sample depth test exercises exactly 20
+decisions (CLI 19), 1,048,575 split nodes, 2,097,151 posteriors and all 20 immutable
+checkpoints. See the [test reference](https://github.com/twerdster/tea/blob/main/tests/README.md) for details.
 
-Deeper configurations are better treated as benchmark workloads and staged regressions, not as the first mandatory correctness layer.
+These tests establish checked code behavior. Real HandNet segmentation and
+localization quality require the separate [held-out protocol](handnet.md).

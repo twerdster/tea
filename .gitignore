@@ -14,3 +14,10 @@ Testing/
 __pycache__/
 *.pyc
 site/
+.venv*/
+runs/
+models/
+WATCHLIST.json
+STATE.json
+TRAINER_REPAIR_NOTES.md
+PIPELINE_NOTES.md

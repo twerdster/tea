@@ -10,9 +10,11 @@
 #include "defines.h"
 #include "Clock.h"
 #include "log.h"
+#include "cuda_check.h"
+#include <algorithm>
 
 template <class Ftype>
-class Feature 
+class Feature
 {
 private:
 	bool _processed;
@@ -30,13 +32,13 @@ public:
 	  //Here we call a features init method which is like a constructor.
 	  //Im not sure what the best design pattern here is in general but I like the init method.
 	  //Each data array has to be allocated using cudaHostAlloc
-	  void init(std::string strFeatureBaseName, long numSamples) //, const uint *index) 
+	  void init(std::string strFeatureBaseName, long numSamples) //, const uint *index)
 	  {
 		  _strFeatureBaseName = strFeatureBaseName;
 		  _numSamples = numSamples;
 		  //_index = index;
-		  
-		  cudaError ce = cudaHostAlloc(&_h_data, _numSamples*sizeof(Ftype),cudaHostAllocPortable ); 
+
+		  teaCudaCheck(cudaHostAlloc(&_h_data, size_t(_numSamples)*sizeof(Ftype),cudaHostAllocPortable), "feature host allocation");
 	  }
 
 	  //We could make this threaded but it might not be worth it because disk requests are serialized anyway ..?
@@ -48,24 +50,24 @@ public:
 		  char fileName[256];
 		  sprintf(fileName, "%s%.4i.feat", _strFeatureBaseName.c_str(), fId);
 		  std::ifstream ifs(fileName, std::ios::binary);
-		  _id = fId;		
+		  _id = fId;
 
 		  //If everything has been setup and the file has been found and opened
 		  //then read from it and put it in the data slot
 		  if (!ifs.fail()) {
 			  clk.tic();
-			  for (int i = 0; i < _numSamples*sizeof(Ftype); i+=BLOCKSIZE_64) //if we use 2b examples and int i (not long i) then this would overflow at i+=BLOCKSIZE_64 and the loop would get stuck
+			  for (size_t i = 0; i < size_t(_numSamples)*sizeof(Ftype); i+=BLOCKSIZE_64)
 			  {
-				  int dataCount = std::min<int>(BLOCKSIZE_64, _numSamples*sizeof(Ftype) - i);
+				  size_t dataCount = std::min<size_t>(BLOCKSIZE_64, size_t(_numSamples)*sizeof(Ftype) - i);
 				  ifs.read(reinterpret_cast<char*>(_h_data) + i, dataCount);
-				  //Should add some kind of message if the file is too short.
-			  }				  
+				  if (!ifs) throw std::runtime_error(std::string("Truncated feature file: ") + fileName);
+			  }
 			  FILE_LOG(LOG2) <<"Load time for Feature " << fId << " = " << clk.toc() << "s";
 		  }
-		  else 
+		  else
 		  {
 			  _id = -1;
-			  FILE_LOG(logERROR) << "A problem occured while loading " << fileName;
+			  throw std::runtime_error(std::string("Cannot open feature file: ") + fileName);
 
 		  }
 
@@ -78,7 +80,7 @@ public:
 	  int	getId()				{ return _id; }
 
 	  ~Feature()
-	  {		  
+	  {
 		  if (_h_data)
 			  cudaFreeHost(_h_data);
 	  }

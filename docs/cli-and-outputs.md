@@ -29,7 +29,7 @@ Parameter meanings:
 
 1. `numFeatures`: how many feature columns to evaluate
 2. `poolSize`: how many features to preload at once
-3. `maxDepth`: tree depth to train to
+3. `maxDepth`: zero-based split level; `19` means 20 split decisions
 4. `foldingDepth`: folding depth used for histogram work partitioning
 5. `featureType`: `F_CHAR`, `F_SHORT`, `F_INT`, or `F_FLOAT`
 6. `numSamples`: number of samples to read from the feature files
@@ -38,8 +38,8 @@ Parameter meanings:
 9. `endDevice`: last CUDA device index
 10. `weightType`: `W_ONES`, `W_APRIORI`, or `W_FILE`
 11. `baseDir`: dataset directory
-12. `treePrefix`: prefix for written outputs
-13. `treeNum`: numeric suffix for the run
+12. `treePrefix`: prefix for the log filename
+13. `treeNum`: numeric model/log suffix, not an RNG seed
 14. `logLevel`: `LOG0` through `LOG4`
 15. `comment`: free-form run comment
 
@@ -60,6 +60,7 @@ Parameter meanings:
 A run writes:
 
 - `Tree_0000.tree`
+- `Tree_0000.depthDD.tree`
 - `Tree_0000.tree.labels`
 - `LogFile_<prefix>_0000.log`
 
@@ -71,6 +72,11 @@ This is the serialized tree snapshot for the run. It contains:
 - internal node feature and threshold selections
 - compact leaf metadata
 - leaf histogram bytes
+
+Current model and training-label files publish atomically. Each completed depth
+also writes an immutable `Tree_0000.depthDD.tree`. Existing depth files cause an
+overwrite refusal; use a fresh run directory after diagnosing a failure. These
+are inference checkpoints, not resumable training state.
 
 ### `Tree_0000.tree.labels`
 
@@ -99,13 +105,15 @@ Practical guidance:
 - `LOG1`: a good default for debugging and smoke tests
 - `LOG2+`: more detailed internal timing and worker chatter
 
-## Weight Types
+## Weight types
 
-The maintained path uses `W_ONES`.
+`W_ONES` uses unweighted Shannon split entropy. `W_APRIORI` divides class counts
+by their global training frequency; `W_FILE` reads positive integer class
+frequency divisors from `Weights.txt` (`class_index divisor` per line). Weighted
+entropy normalizes probabilities before the logarithm, including very small
+deep-node masses. All modes keep raw leaf posteriors. The weighted modes are
+covered by the independent CPU split regressions.
 
-Other modes exist:
-
-- `W_APRIORI`
-- `W_FILE`
-
-Those are still part of the original code, but they are not part of the current shallow maintained smoke-test path.
+The accepted depth range is `0 <= foldingDepth <= maxDepth <= 20`. Invalid feature
+or weight modes, truncated inputs and CUDA allocation failures terminate the run.
+See [deep training](deep-training.md) for the 20-decision and forest contracts.
