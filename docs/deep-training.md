@@ -5,6 +5,10 @@ full dense allocation and serialization path for **20 split decisions**. This
 establishes trainer correctness on generated data. Real HandNet performance must
 be measured with held-out predictions.
 
+The [2026-11-15 HandNet pilot report](handnet-pilots.md) records eight completed
+bounded pilots and their validation comparison. Final full-size forest results
+remain pending at that checkpoint.
+
 ## Depth, diversity and split search
 
 Tea CLI `maxDepth=d` trains levels `0..d` inclusive: use **19 for 20 decisions**.

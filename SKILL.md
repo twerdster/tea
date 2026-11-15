@@ -70,3 +70,21 @@ candidate, separately verify the actual selected model on real depth frames agai
 native DepthTrack, validate declared observation defaults, review attribution/data
 terms and all public files, and record a fresh final public-manifest hash. This utility performs no upload and does not substitute for required validation or
 the user's existing task authorization. It does not establish trained-model accuracy.
+
+## Pilot results workflow — 2026-11-15
+
+`docs/handnet-pilots.md` and `docs/evidence/handnet-pilots-2026-11-15.json` record the
+completed eight pilots and 48 evaluations on one frozen 300-frame validation subset.
+Keep their scores linked to the frozen training source `27ae728`. The selected
+class mode/scale is eight classes with background and probe 25000; 20 decisions and
+cutoff 0.5 are pilot settings, not the final forest's frozen settings. Re-evaluate
+final depth/cutoff and single-tree versus ensemble choice after all three full-size
+trees exist, before opening test data.
+
+Maintain the distinction between seven-class depth-ROI inference and eight-class
+learned-background inference, their pixel domains, fingertip F1 and segmentation
+metrics. Do not present modest pilot scores or three-training-frame numerical CPU
+parity as full-size/test accuracy, temporal accuracy or latency. Public aggregates
+must omit private paths, host/account details and runtime ledgers. Update this
+report only from verified model/evaluation evidence; keep final result claims
+pending until the final selected models have been evaluated.

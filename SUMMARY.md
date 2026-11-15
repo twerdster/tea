@@ -25,11 +25,20 @@ model/evaluation semantics and supervisor failure handling. The new DepthTrack C
 adapter executes on Mac/Linux; historical fixed-depth Metal/FPGA models are separate.
 See `docs/deep-training.md` and `docs/handnet.md` for exact commands and limits.
 
-The current HandNet campaign prepares eight bounded pilot configurations and
-three independently sampled final trees. Application accuracy and ensemble gains
-remain unverified until held-out evaluation completes. Test data is excluded from
+## Pilot checkpoint — 2026-11-15
+
+Eight single-tree HandNet pilots and all 48 configurations on the same frozen 300
+validation frames completed. Independent counts/F1 checks agree. The highest pilot
+mean fingertip F1@15mm was 0.23650137167567786: eight classes including background,
+probe 25000 pixel·mm, 20 decisions and cutoff 0.5. This selects class mode/scale for three
+full-size 90 percent frame bags; final depth/cutoff and forest-versus-single comparison
+remain for later validation. The first full-size feature bank entered preparation.
+`docs/handnet-pilots.md` and its safe aggregate JSON record the modest pilot scores,
+foreground/domain differences and numerical CPU parity evidence. No full-size,
+ensemble or final-test accuracy is established. Frozen training source remains
+27ae728; these documentation updates do not change it. Test data is excluded from
 selection; official random-frame splits do not establish subject independence.
-Training, data staging and publication are distinct completion stages.
+Training, data staging and publication remain distinct completion stages.
 
 `scripts/prepare_forest_release.py` prepares a local publication candidate from a
 selected deployment manifest. It reconstructs known inference fields, copies only
