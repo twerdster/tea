@@ -159,3 +159,48 @@ predictions. Official frame splits do not establish participant independence.
 After selecting configuration and localization thresholds, evaluate the untouched
 test split once for final reporting. Archive the manifest, evaluation command,
 metrics, overlays and failure cases alongside the selected checkpoints.
+
+## Prepare a public release locally
+
+Run the release preparer on a selected deployment manifest after reviewing its
+model/coordinate hashes and selection metadata. It preserves the private source,
+reconstructs known inference fields, copies only model/Coords assets and replaces
+runtime provenance with reviewed public attribution and training details. Declared
+source asset hashes must match before copying. Existing outputs and path escapes
+are refused; no upload occurs.
+
+```bash
+python scripts/prepare_forest_release.py \
+  --manifest /models/deploy/ensemble/forest.json \
+  --output /models/release/ensemble \
+  --training-source-revision 27ae728e9cb012d2255337d9b3583bbe7f66b3cc \
+  --selection-metadata /work/reviewed-selection.json
+```
+
+The training revision is explicit and remains the frozen training revision even
+when later packaging code has a newer HEAD. The metadata schema below illustrates
+one tree; the counts are examples, not recorded results. Supply actual reviewed
+counts/depth and one ordered record per selected tree:
+
+```json
+{
+  "selection_metric": "macro-fingertip-f1-at-15mm",
+  "selected_on": "validation",
+  "test_used_for_selection": false,
+  "probe_size_pixel_mm": 25000,
+  "training_frame_fraction": 0.9,
+  "trees": [{
+    "coordinate_seed": 201, "sampling_seed": 201, "frame_seed": 201,
+    "training_samples": 123456, "training_frames": 1000,
+    "features": 1200, "split_decisions": 16
+  }]
+}
+```
+
+The result includes a relative-path `forest.json` and a separate
+`release-verification.json` with private/public manifest hashes and exact synthetic
+labels, probabilities, heaps and declared observation checks. Undeclared
+postprocessing remains undeclared; selected explicit defaults remain intact.
+Actual-frame comparison against native DepthTrack and public artifact review
+remain required validation. The utility performs no upload and does not change
+the user's existing authorization.

@@ -45,3 +45,28 @@ work completes and results are reported, or the user cancels.
 Publish reviewed source, distributable selected model artifacts and safe provenance.
 Exclude runtime ledgers, private machine paths and source data archives. Update the
 DepthTrack integration and HandNet submodule deliberately after validation.
+
+## Preparing a public model candidate
+
+Use `scripts/prepare_forest_release.py` with the selected deployment manifest, a
+new output directory, explicit `--training-source-revision` and a reviewed
+`--selection-metadata` JSON file. For the active campaign the training revision is
+`27ae728e9cb012d2255337d9b3583bbe7f66b3cc`; later packaging/documentation commits do
+not change it. The CLI help defines the strict safe metadata schema for validation
+selection, probe size, frame fraction and ordered per-tree seeds/counts/depth.
+
+The preparer copies only model and Coords assets into relative release paths,
+recomputes hashes, drops nested private runtime provenance and reconstructs known
+image/feature/class/postprocessing fields. It refuses existing outputs, traversal,
+asset symlinks, unsafe reviewed metadata and oversized inputs. Do not weaken these
+checks to publish a private manifest. Preserve the private source and its hash in
+the separate release verification record. Missing postprocessing declarations stay
+missing; explicit selected defaults, class order and unnormalized tree weights
+must retain their exact meaning.
+
+Run `python tests/test_forest_release.py -v` after preparer changes. Its synthetic
+checks establish sanitization and inference equivalence only. Before uploading any
+candidate, separately verify the actual selected model on real depth frames against
+native DepthTrack, validate declared observation defaults, review attribution/data
+terms and all public files, and record a fresh final public-manifest hash. This utility performs no upload and does not substitute for required validation or
+the user's existing task authorization. It does not establish trained-model accuracy.

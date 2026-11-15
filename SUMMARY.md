@@ -31,6 +31,15 @@ remain unverified until held-out evaluation completes. Test data is excluded fro
 selection; official random-frame splits do not establish subject independence.
 Training, data staging and publication are distinct completion stages.
 
+`scripts/prepare_forest_release.py` prepares a local publication candidate from a
+selected deployment manifest. It reconstructs known inference fields, copies only
+model/coordinate assets, replaces runtime provenance with reviewed public metadata,
+and verifies exact synthetic labels, probabilities, heaps and declared observations.
+The training source revision must be supplied explicitly; repository HEAD is never
+used as a substitute. Private source hashes are retained in a separate verification
+record. This utility does not upload artifacts or satisfy actual-frame/native
+parity requirements before publication.
+
 Task-local machine paths, active job identities, budgets, storage verification and
 monitoring state belong in ignored `runs/current/HANDOFF.md`, `WATCHLIST.json`,
 `STATE.json`, `CAMPAIGN.json` and `BUDGET.json`. Consult live evidence before resuming
