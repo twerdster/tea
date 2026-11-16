@@ -9,6 +9,11 @@ The [2026-11-15 HandNet pilot report](handnet-pilots.md) records eight completed
 bounded pilots and their validation comparison. Final full-size forest results
 remain pending at that checkpoint.
 
+The later [2026-11-16 forest report](handnet-forest-results.md) records three
+completed 20-decision trees, frozen validation selection and the full 10,000-frame
+test comparison. It includes selected artifact downloads and numerical native
+CPU parity evidence; the earlier pilot report remains a dated checkpoint.
+
 ## Depth, diversity and split search
 
 Tea CLI `maxDepth=d` trains levels `0..d` inclusive: use **19 for 20 decisions**.

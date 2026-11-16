@@ -14,6 +14,13 @@ Tea is a CUDA/C++ decision-tree trainer for very large precomputed feature datas
 
 The maintained workflow covers buildability, native trainer correctness and reproducible dataset/inference contracts. Historical MATLAB tooling is replaced by Python conversion and evaluation utilities. Real model quality requires held-out evaluation; synthetic success is not an accuracy claim.
 
+The completed [HandNet forest evaluation](docs/handnet-forest-results.md) reports
+**0.374948 mean fingertip F1@15mm** for the three-tree ensemble versus **0.327988**
+for the validation-selected single tree on all **10,000 official test frames**.
+Both use 20 split decisions, 1,200 int8 features, cutoff 0.25 and minimum component
+support 3. The report includes limitations, exact denominators and
+[selected model downloads](https://github.com/twerdster/tea/releases/tag/handnet-forest-2026-11-16).
+
 ## Documentation
 
 The repository now includes a multi-page documentation site under `docs/`, built with MkDocs.
@@ -225,8 +232,9 @@ python scripts/tea_model.py evaluate \
   --training-manifest /work/tea/pilot-25000/frames.json
 ```
 
-No new HandNet accuracy claim follows from trainer correctness checks. The earlier
-depth 8 modernization result matched the dominant class and predates native repairs.
+Trainer correctness checks are separate from the completed
+[held-out forest evaluation](docs/handnet-forest-results.md). The earlier depth 8
+modernization result matched the dominant class and predates native repairs.
 
 ## Dataset Utility
 

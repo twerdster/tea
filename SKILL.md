@@ -88,3 +88,32 @@ parity as full-size/test accuracy, temporal accuracy or latency. Public aggregat
 must omit private paths, host/account details and runtime ledgers. Update this
 report only from verified model/evaluation evidence; keep final result claims
 pending until the final selected models have been evaluated.
+
+## Completed forest results workflow — 2026-11-16
+
+The original three-tree campaign and both frozen 10,000-frame test evaluations
+completed. `docs/handnet-forest-results.md` and
+`docs/evidence/handnet-forest-2026-11-16.json` report the audited result: forest
+F1@15mm 0.37494755678731473 versus the validation-selected seed 202 single
+0.32798765233655836, using 20 decisions/cutoff 0.25/minimum support 3/foreground none.
+Keep the 300-frame selection subset separate from the descriptive full 2,773-frame
+validation cohort, which includes it. Preserve the earlier pilot report as dated
+history; do not replace its cutoff 0.5 with the later final cutoff.
+
+Final aggregation must retain hit/presence/detection/absent false-positive denominators,
+the adjusted sensor-position reference semantics, the natural positive-depth
+classification domain and modest localization/foreground quality. Raw-reference
+metric arithmetic checks are separate from classifier inference validation. Exact
+selected-model CPU parity on three training frames with synthetic 0.1s timestamps
+does not establish tracking accuracy, latency or Metal/FPGA/mobile support.
+
+Model downloads use the `handnet-forest-2026-11-16` release and its two reviewed ZIP
+hashes; verify fresh public manifests after sanitization rather than reusing a
+prefix-verification hash recorded before postprocessing fields were added. Keep
+training revision 27ae728 explicit and separate from packaging/documentation commits.
+Review attribution/data terms and public contents before publication. Private
+runtime ledgers, raw frame identities and machine paths stay excluded.
+
+The optional 200m/256 recipe remains unlaunched pending authorized run-count
+reconciliation. Its prospective recipe is preserved, but comparisons after
+original-test outcome disclosure are post-exposure exploratory engineering.

@@ -40,6 +40,35 @@ ensemble or final-test accuracy is established. Frozen training source remains
 selection; official random-frame splits do not establish subject independence.
 Training, data staging and publication remain distinct completion stages.
 
+## Completed forest evaluation — 2026-11-16
+
+Three full-size trees completed with seeds 201/202/203, 181,979 training frames
+per tree, about 84.76 million sampled pixels per tree and 1,200 int8 features.
+All three have 20 split decisions. The same frozen 300 validation frames selected
+20 decisions/cutoff 0.25/minimum support 3/foreground none for the forest and best
+single (seed 202); 24 final validation configurations were checked. Selection was
+frozen before test extraction and remained unchanged.
+
+The complete 10,000-frame test comparison gives mean fingertip F1@15mm
+0.37494755678731473 for the forest versus 0.32798765233655836 for the selected
+single. Full 2,773-frame validation scores are 0.3833437004586795/0.3370599042841775;
+that descriptive cohort includes the 300 selection frames. Independent raw-reference
+count/hit/error audits passed, with no test overlap with any training bag or
+validation frame. Classification truth supports and count conservation were checked;
+predictions were not rerun during the audit. Official random frame splits do not
+establish subject/session independence.
+
+`docs/handnet-forest-results.md` and
+`docs/evidence/handnet-forest-2026-11-16.json` contain safe results, denominators,
+selected assets and numerical Linux/macOS CPU parity evidence. These checks use
+three training frames and synthetic timestamps; they do not establish tracking
+accuracy, latency or deep Metal/FPGA execution. The selected release is
+`handnet-forest-2026-11-16`; publication is a distinct stage. Training source stays
+27ae728; packaging began from 651a95d and later documentation does not change weights.
+The historical pilot checkpoint above remains unchanged. A proposed 200m/256
+follow-up is unlaunched; comparisons after original test disclosure are explicitly
+post-exposure exploratory engineering, not untouched confirmation.
+
 `scripts/prepare_forest_release.py` prepares a local publication candidate from a
 selected deployment manifest. It reconstructs known inference fields, copies only
 model/coordinate assets, replaces runtime provenance with reviewed public metadata,
