@@ -30,9 +30,9 @@ Tea assumes that features have already been computed offline and saved column-wi
 
 This is a deliberate tradeoff:
 
-- the trainer reads a defined binary layout
-- feature extraction is separate from split search
-- synthetic benchmark runs can vary feature count independently of extraction cost
+- it makes training simple and repeatable
+- it avoids mixing feature extraction with split search
+- it allows the trainer to benchmark raw split-evaluation throughput
 
 The cost is that you must prepare the dataset in Tea's on-disk format before training.
 
@@ -53,23 +53,32 @@ The host then reduces those per-feature results and updates the tree state for t
 
 Tea distinguishes between:
 
-- `maxDepth`: the depth you want to train to
+- `maxDepth`: zero-based split level; `d` means `d+1` decisions (`19` for 20)
 - `foldingDepth`: the depth at which histogram work is folded for device-side processing
 
 The folding depth changes how histogram storage and passes over node subsets are organized. In practice, it is a performance parameter, not just a semantic tree-depth parameter.
 
-Both generated training cases use `foldingDepth == maxDepth`; alternative folding configurations are outside their coverage.
+Shallow examples can use `foldingDepth == maxDepth`; deeper runs can use a lower folding depth to bound histogram buffers. Both folded and unfolded paths have regression coverage. Require `0 <= foldingDepth <= maxDepth <= 20`.
 
 ## Work distribution
 
-The implementation separates disk loading, host coordination and GPU split evaluation. Feature columns can be prepared while workers process earlier columns. The performance of that overlap depends on storage, feature counts, device memory and GPU configuration; this description is not a measured speedup.
+The implementation separates disk loading, host coordination and GPU split evaluation.
+Feature columns can be prepared while workers process earlier columns. The performance
+of that overlap depends on storage, feature counts, device memory and GPU configuration;
+this description is not a measured speedup.
 
-## Known Limits
+## Limits and deep training
 
-Tea is an older research codebase. The available small tests leave these areas unverified:
+One invocation trains one tree; the tree number selects its output filename and
+is not an RNG seed. There is no native minimum-leaf-size or pruning option.
+Three diverse trees need independent reproducible feature/sample banks.
 
-- very deep trees
-- large historical benchmark configurations that were never part of modern CI
-- application-level evaluation beyond the current smoke and converter tests
+The repaired native path has independent CPU/GPU regression coverage, including
+the full 20-decision dense model. This does not establish application accuracy.
+Use [deep training](deep-training.md) for bounded queueing, memory, atomic depth
+checkpoints and validation selection. Use natural-distribution held-out data for
+segmentation/localization metrics rather than training self-success.
 
-For supported verification, stay close to the testing and benchmarking flows documented in this site.
+The [completed forest report](handnet-forest-results.md) records the separate
+held-out application results; it does not establish every historical or multi-GPU
+configuration or reproduce the paper's detector metric.

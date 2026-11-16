@@ -8,6 +8,8 @@
 #include <thread>
 #include <iostream>
 #include <string>
+#include <limits>
+#include <stdexcept>
 #include "AtomicQueue.h"
 #include "Feature.h"
 #include "GPUWorker.h"
@@ -32,7 +34,6 @@ void* gpuWorkerPool;
 
 std::vector<GPUDevice> gpuDevice;
 std::vector<RFTrainNode> nodes;
-std::vector<int> scoreWeights;
 
 int treeNum;
 int maxNodes;
@@ -40,10 +41,10 @@ int numClasses;
 int numSamples;
 int numFeatures;
 int poolSize;
-int maxDepth;	
+int maxDepth;
 int foldingDepth;
 int numThresh;
-int startDevice, endDevice, numDevices; 
+int startDevice, endDevice, numDevices;
 int numStreams;
 FeatureType featureType;
 WeightType weightType;
@@ -54,6 +55,18 @@ uint *fwdIndexList, *revIndexList;
 
 std::vector<float> threshList;
 Sample* sampleList; // Labels and nodetraj together
+
+// Publish a complete snapshot with one same-directory rename. A monitor or
+// evaluator can open the current file while the next depth is being trained.
+void writeAtomicBinary(const std::string& path, const void* data, size_t bytes)
+{
+	const std::string temporary = path + ".tmp";
+	std::ofstream output(temporary.c_str(), std::ios::binary | std::ios::trunc);
+	output.write(static_cast<const char*>(data), bytes);
+	output.close();
+	if (!output || std::rename(temporary.c_str(), path.c_str()) != 0)
+		throw std::runtime_error("Failed publishing snapshot: " + path);
+}
 
 //Save tree build state
 void saveTreeBuildState()
@@ -73,35 +86,35 @@ void loadTreeBuildState()
 void generateSampleTrajectoriesFromBuildState(int depth, std::string sampleLabelsName)
 {
 	int totalNodes = pow(2.0f, depth + 1) - 1; // All the nodes sum to this number
-	
+
 	FILE_LOG(LOG1) << "Saving Samples traj list ...";
 
 	std::ofstream ofs(sampleLabelsName.c_str(), std::ios::binary);
-	uint * tmpTrajs = new uint[numSamples];	
+	uint * tmpTrajs = new uint[numSamples];
 	memset(tmpTrajs,0,numSamples*sizeof(uint));
-	
+
 	Clock clk;
 
-	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++) 
+	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++)
 	{
 		for (int s = nodes[nIdx].idxBegin; s <= nodes[nIdx].idxEnd; s++)
 		{
 			uint traj =  nIdx*2 + sampleList[s].bestTraj + 1;
-			tmpTrajs[revIndexList[s]] = traj;		
+			tmpTrajs[revIndexList[s]] = traj;
 		}
 	}
 
 	ofs.write((char*)tmpTrajs, sizeof(uint)*numSamples);
 	ofs.close();
 
-	delete[] tmpTrajs;	
+	delete[] tmpTrajs;
 }
 
 //Generate tree from a build state
 //The tree generated can be used to test trees at different depths because
 //the histogram provided is complete. One simple way of reducing histogram memory by half is to not store intermediate histograms.
 void generateTreeFromBuildState(int depth, std::string treeName)
-{	
+{
 	Clock clk;
 	clk.tic();
 	int totalNodes = pow(2.0f, depth + 1) - 1; // All the nodes sum to this number
@@ -110,26 +123,26 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	//allocate char* array to size of whole tree
 	//set each field to its respective position in array
 	Tree tree;
-	int allocSize = sizeof(TreeHeader) + sizeof(RFNode)*totalNodes + sizeof(CompactLeaf)*totalHists + sizeof(uchar)*totalHists*numClasses;
-	tree.treeAlloc = new char[allocSize];
+	size_t allocSize = sizeof(TreeHeader) + sizeof(RFNode)*totalNodes + sizeof(CompactLeaf)*totalHists + sizeof(uchar)*totalHists*numClasses;
+	tree.treeAlloc = new char[allocSize](); // deterministic native struct padding
 	tree.th =				(TreeHeader*)	(tree.treeAlloc);
 	tree.nodes =			(RFNode*)		((char*)tree.th				+ sizeof(TreeHeader));
 	tree.compactLeaves =	(CompactLeaf*)	((char*)tree.nodes			+ sizeof(RFNode)*totalNodes);
 	tree.histograms =		(uchar*)		((char*)tree.compactLeaves	+ sizeof(CompactLeaf)*totalHists);
-	uint * fullHistograms = new uint[totalHists*numClasses];
-	memset(fullHistograms,0,sizeof(uint)*totalHists*numClasses);
-	
-	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++) 
+	uint * fullHistograms = new uint[size_t(totalHists)*numClasses];
+	memset(fullHistograms,0,sizeof(uint)*size_t(totalHists)*numClasses);
+
+	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++)
 	{
 		for (int s = nodes[nIdx].idxBegin; s <= nodes[nIdx].idxEnd; s++)
 		{
 			uint traj =  nIdx*2 + sampleList[s].bestTraj + 1;
 			uint label = sampleList[s].label;
 			//printf("Node, Traj, Label : %i,%i,%i\n",nIdx,traj,label);
-			for (int d = 0; d <= depth + 1; d++ ) 
-			{			
-				uint hist = (traj >> (depth +1 - d))*numClasses;
-				fullHistograms[hist + label]++;
+			// Heap indices are zero based: parent(i)=(i-1)/2, not i>>1.
+			for (uint hist = traj; ; hist = (hist - 1) / 2) {
+				fullHistograms[size_t(hist)*numClasses + label]++;
+				if (hist == 0) break;
 			}
 		}
 	}
@@ -142,44 +155,32 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	for (int n = 0; n < tree.th->totalNodes; n++)
 	{
 		RFNode &node = *(tree.nodes + n);
-		node.F = nodes[n].bestFeat;		
+		node.F = nodes[n].bestFeat;
 		node.thr = nodes[n].bestThresh;
 		//printf("Tree Node:%i  F:%i  thr:%f\n",n,node.F,node.thr);
 	}
 
 	for (int n = 0; n < tree.th->totalHists; n++)
-	{	
-		float maxVal=-1;
-		int distVal=-1;
-		
-		for (int j = 0; j < tree.th->numClasses; j++)
-		{
-			float f = (1.0f/((float)scoreWeights[j]))*(float)fullHistograms[n*tree.th->numClasses + j]; 
-			//float f = (float)fullHistograms[n*tree.th->numClasses + j]; 
-			//printf("hist[%i + %i] = %f \n",n,j,f);
-			if (f>maxVal)
-			{
-				distVal = j;
-				maxVal = f;
-			}
-		}
-
-		CompactLeaf &cl = tree.compactLeaves[n];
-		// NOTE: the following line may be an error because it doesnt take into account the scoreWeights.
-		//        should probably correct this. Currently its only a minor error because the label is still correct and
-		//        this is whats used at runtime. But in general scoreWeights should definitely be taken into account.
-		//        Fixed line should probably be: cl.maxVal = (1.0f/((float)scoreWeights[j]))*(float)fullHistograms[n*tree.th->numClasses + distVal];
-		cl.maxVal = fullHistograms[n*tree.th->numClasses + distVal];
-		cl.label = distVal;		
-		//printf("[%i,%i]\n",(int)cl.label,(int)cl.maxVal);
-		
-		//uint* itrBegin = fullHistograms + n * tree.th->numClasses;
-		//uint* itrEnd   = fullHistograms + (n+1) * tree.th->numClasses;	
-		//uint* itrMax = std::max_element(itrBegin,itrEnd);
-		
-		//cl.maxVal = *itrMax;
-		//cl.label = std::distance(itrBegin,itrMax);		
-		//printf("(%i,%i),(%i,%i)\n",(int)distVal,(int)maxVal,(int)cl.label,(int)cl.maxVal);
+	{
+		// Empty leaves inherit the nearest populated ancestor's posterior.
+		bool occupied = false;
+		for (int c = 0; c < numClasses; ++c)
+			occupied = occupied || fullHistograms[size_t(n)*numClasses + c] != 0;
+		if (!occupied && n > 0)
+			std::copy(fullHistograms + size_t((n-1)/2)*numClasses,
+			          fullHistograms + size_t((n-1)/2 + 1)*numClasses,
+			          fullHistograms + size_t(n)*numClasses);
+		// Counts can exceed float's exact integer range on large datasets.
+        // Keep the raw argmax exact; ties select the lowest class index.
+        uint maximum = 0;
+        int label = 0;
+        for (int c = 0; c < numClasses; ++c) {
+            const uint count = fullHistograms[size_t(n)*numClasses + c];
+            if (count > maximum) { maximum = count; label = c; }
+        }
+        CompactLeaf &cl = tree.compactLeaves[n];
+        cl.maxVal = maximum;
+        cl.label = label;
 	}
 
 	for (int n = 0; n < tree.th->totalHists; n++)
@@ -187,13 +188,10 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		CompactLeaf &cl = tree.compactLeaves[n];
 		for (int c = 0 ; c < tree.th->numClasses; c++)
 		{
-			//We compress the histogram into a byte so that the histograms dont take up too much space otherwise we would just do a memcpy here
-			// NOTE: this is almost certainly now an error if we are not taking into account scoreWeights.
-			//        the result will be an overflow for all the histogram bins which are larger than cl.maxVal
-			//        Must fix this this. However can still stay inside a byte. Does not need to be larger.
-			//        fixed line should probably be: uchar val = (1.0f/((float)scoreWeights[j]))*((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
-			uchar val = ((float)(fullHistograms[n*tree.th->numClasses + c]))*255.0f/(float)cl.maxVal;
-			tree.histograms[n*tree.th->numClasses + c] = val;
+			// Max scaling preserves the argmax; inference normalizes the sum.
+			uchar val = cl.maxVal ? static_cast<uchar>(std::min(255.0,
+				double(fullHistograms[size_t(n)*tree.th->numClasses + c])*255.0/double(cl.maxVal))) : 0;
+			tree.histograms[size_t(n)*tree.th->numClasses + c] = val;
 		}
 	}
 
@@ -207,12 +205,12 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	uint *correct = new uint[numClasses];
 	uint *confusion = new uint[numClasses*numClasses];
 	uint *total = new uint[numClasses];
-	for (int i=0; i< numClasses; i++) 
+	for (int i=0; i< numClasses; i++)
 		for (int j=0; j <numClasses; j++)
 			confusion[i + j*numClasses] = correct[i] = total[i] = 0;
 
 	FILE_LOG(LOG1) << "Calculating trees self-success ...";
-	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++) 
+	for (int nIdx = totalNodes/2; nIdx < totalNodes;  nIdx++)
 	{
 		//printf("SNode:%i \n",nIdx);
 		for (int s = nodes[nIdx].idxBegin; s <= nodes[nIdx].idxEnd; s++)
@@ -222,19 +220,17 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 			tmpLabels[revIndexList[s]] = tree.compactLeaves[traj].label;
 
 			//printf("(%i %i)\n",label, tree.compactLeaves[traj].label);
-			if (label == tree.compactLeaves[traj].label) 
-			{				
-				numCorrect++;	
+			if (label == tree.compactLeaves[traj].label)
+			{
+				numCorrect++;
 				correct[label]++;
 			}
 			total[label]++;
-			confusion[tree.compactLeaves[traj].label + label*numClasses]++; //Standard format from wiki: Each row is the true label, each column along a row is the prediction 
+			confusion[tree.compactLeaves[traj].label + label*numClasses]++; //Standard format from wiki: Each row is the true label, each column along a row is the prediction
 		}
 	}
 
-	std::ofstream ofsLbl((treeName+".labels").c_str(), std::ios::binary);
-	ofsLbl.write((char*)tmpLabels, numSamples*sizeof(ushort));
-	ofsLbl.close();
+	writeAtomicBinary(treeName + ".labels", tmpLabels, size_t(numSamples)*sizeof(ushort));
 
 	FILE_LOG(LOG1) << "Tree self-success:";
 	FILE_LOG(LOG1) << "------ Per class -------";
@@ -243,11 +239,11 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 		FILE_LOG(LOG1) << std::setprecision(2) << std::setw(3) << i << "(" << std::setw(6) << std::fixed << 100.0f*(float)total[i]/(float)numSamples << "%):" << std::fixed << 100.0f*(float)correct[i]/(float)total[i];
 
 	FILE_LOG(LOG3) << "----Confusion data------";
-	
-	std::stringstream ss;	
+
+	std::stringstream ss;
 	ss.str("");
 	ss << std::setw(9) << "Tru\\Pred";
-	for (int i=0;i<numClasses; i++) 
+	for (int i=0;i<numClasses; i++)
 		ss << std::setw(10) << i;
 	FILE_LOG(LOG3) << ss.str().c_str();
 
@@ -264,13 +260,19 @@ void generateTreeFromBuildState(int depth, std::string treeName)
 	FILE_LOG(LOG1) << "-------Total -------";
 	FILE_LOG(LOG0) << "Depth "<< depth << ": "<< std::fixed << 100.0f*(float)numCorrect/(float)numSamples <<"%";
 
-	std::ofstream ofs(treeName.c_str(), std::ios::binary);
-	ofs.write((char*)tree.treeAlloc, allocSize);
-	ofs.close();
+	char depthSuffix[32];
+	std::snprintf(depthSuffix, sizeof(depthSuffix), ".depth%02d.tree", depth);
+	std::string depthName = treeName.substr(0, treeName.size()-5) + depthSuffix;
+	if (std::ifstream(depthName.c_str()).good())
+		throw std::runtime_error("Refusing to overwrite completed depth checkpoint: " + depthName);
+	writeAtomicBinary(depthName, tree.treeAlloc, allocSize);
+	writeAtomicBinary(treeName, tree.treeAlloc, allocSize);
 	delete[] correct;
 	delete[] total;
 	delete[] fullHistograms;
 	delete[] tree.treeAlloc;
+	delete[] confusion;
+	delete[] tmpLabels;
 	FILE_LOG(LOG1) << "Full tree snapshot and self success timing in " << std::fixed << clk.toc() << "s";
 }
 
@@ -295,13 +297,13 @@ void broadcastMapTasksData()
 	//We want to start out with no broadcasts
 	broadcastCount = 0;
 
-	// Broadcast all the data onto the different devices. 
+	// Broadcast all the data onto the different devices.
 	std::vector<std::thread> tasks;
 	tasks.reserve(numDevices);
 	for (int deviceId = 0; deviceId < numDevices; deviceId++)
 		tasks.emplace_back(&pushMapTasksData, deviceId);
 		//pushMapTasksData(deviceId);
-		
+
 	//And now we want to check how many broadcasts occurred. If the right number occured then we have finished
 	std::unique_lock<std::mutex> lock(broadcastMutex);
 	while (broadcastCount < numDevices)
@@ -318,13 +320,13 @@ void reduceMapTasksData(int depth)
 {
 	Clock clk;
 	clk.tic();
-	// depth starts from 0 
+	// depth starts from 0
 	int numNodes = pow(2.0f, depth); // This is the number of the nodes at a particular depth level
 	int idxDepth = numNodes - 1; //this is the offset index of the first node on the depth level
 
 	//create enough memory for all the devices to pull for this depth level and the next
 	RFTrainNode *gpuNodes;
-	cudaHostAlloc(&gpuNodes, numDevices * (1 /*This level*/ + 2 /*next */) * numNodes *sizeof(RFTrainNode),cudaHostAllocPortable); 
+	teaCudaCheck(cudaHostAlloc(&gpuNodes, size_t(numDevices) * 3 * numNodes *sizeof(RFTrainNode),cudaHostAllocPortable), "reduction host allocation");
 
 	//We now pull all the current device trees. For an MPI implementation this could be done
 	//one node at a time instead of storing the whole set in memory but here we really dont care
@@ -332,7 +334,7 @@ void reduceMapTasksData(int depth)
 	for (int deviceId = 0; deviceId < numDevices; deviceId++)
 		gpuDevice[deviceId].pullNodes(gpuNodes + deviceId*(1 + 2)*numNodes, idxDepth, (2*(int)(depth<maxDepth) + 1)*numNodes);
 
-	//NOTE: In above, the gpu and cpu stores the entire tree of nodes in memory 
+	//NOTE: In above, the gpu and cpu stores the entire tree of nodes in memory
 	//However here we only pull one or two levels and then update that level in the cpu node array
 
 	for (int node = 0; node < numNodes; node++ )
@@ -356,20 +358,13 @@ void reduceMapTasksData(int depth)
 
 		//now reorder the index based on these samples for this node
 		int pIdx = partition(&sampleList[0], &revIndexList[0], nodes[node + idxDepth].idxBegin, nodes[node + idxDepth].idxEnd);
-		
-		pIdx = iSnapDown(pIdx,sizeof(SampleType4)); 
-		
-		//__PROBLEM__^__. This will pose a problem for deeper nodes and leaves.
-		// Im not exactly sure why I used it. I think by not doing so it caused some kind of alignment bug.
-		// However the problem it generates is as such: Suppose we have a node that looks like this after sorting 000111. pIdx will then start as 3.
-		// The above line however will turn it into pIdx = 0 which will make the node think it has 0 elements on the left and 6 elements on the right. 
-		// Im not sure yet how much of an effect this has. But it does mean that when there are very few examples in a node some will go the wrong way which
-		// means they will be incorrectly classified at runtime...
+
+		// Keep exact boundaries, including odd and singleton children.
 
 		if (depth < maxDepth)
 		{
 			// and set the start and end indices of the next levels node
-			// What happens when one of these has no occupants? Then the children receive the same boundaries as the parents						
+			// What happens when one of these has no occupants? Then the children receive the same boundaries as the parents
 			nodes[(node + idxDepth)*2 + 1].idxBegin = nodes[node + idxDepth].idxBegin;
 			nodes[(node + idxDepth)*2 + 1].idxEnd = pIdx - 1;
 			nodes[(node + idxDepth)*2 + 1].entropy = gpuNodes[numNodes + (node*2) + bestDeviceId*(2 + 1)*numNodes].entropy;
@@ -404,26 +399,26 @@ void launchMapTask(int depth, int workerId, int featureToken)
 {
 	Clock clk;
 	clk.tic();
-	//Get the gpu worker. One task is run per one CPU thread. 
-	GPUWorker<Ftype> *gpuWorker = ((GPUWorkerPool<Ftype>*)gpuWorkerPool)->getWorker(workerId);		
+	//Get the gpu worker. One task is run per one CPU thread.
+	GPUWorker<Ftype> *gpuWorker = ((GPUWorkerPool<Ftype>*)gpuWorkerPool)->getWorker(workerId);
 
 	//Get the cpu based feature data
 	//const uint * index = featurePool->getFeature(featureToken)->getIndex();
 	const Ftype* data_host = (Ftype*)((FeaturePool<Ftype>*)featurePool)->getFeature(featureToken)->getDataPtr();
-	int fId = ((FeaturePool<Ftype>*)featurePool)->getFeature(featureToken)->getId();	
+	int fId = ((FeaturePool<Ftype>*)featurePool)->getFeature(featureToken)->getId();
 
 	gpuWorker->setWorkerHeading(workerId,fId);
 
-	//Perform a synchronous copy to the GPU on the worker's stream. Synchronous is meant to illustrate 
+	//Perform a synchronous copy to the GPU on the worker's stream. Synchronous is meant to illustrate
 	// that this CPU thread wont continue until after the copy is finished.
 	gpuWorker->sendData(data_host, fwdIndexList);
 
 	//CPU memory has been copied to GPU so we can release it on the CPU
-	((FeaturePool<Ftype>*)featurePool)->releaseFeatureToken(featureToken);	
+	((FeaturePool<Ftype>*)featurePool)->releaseFeatureToken(featureToken);
 
 	//Lock this particular worker's device and compute whatever we need to compute
 	// Uses whatever is currently in the workers memory slot to perform a map from data to <node,score> pairs
-	gpuWorker->map(depth, fId, numThresh, threshList, &nodes[0]);	
+	gpuWorker->map(depth, fId, numThresh, threshList, &nodes[0]);
 
 	((GPUWorkerPool<Ftype>*)gpuWorkerPool)->releaseGPUWorker(workerId);
 
@@ -435,19 +430,17 @@ template <class Ftype>
 int runBuilder()
 {
 
-	char tn[10];
+	char tn[32];
 	sprintf(tn, "%.4i", treeNum);
 	std::string treeName(tn);
 
 	FILE_LOG(LOG1) << "Loading data ...";
-	cudaError_t err;
+
 
 	// ------------------ Initially pure linear index
-	err = cudaHostAlloc(&fwdIndexList, numSamples*sizeof(uint),cudaHostAllocPortable);	
-	err = cudaHostAlloc(&revIndexList, numSamples*sizeof(uint),cudaHostAllocPortable);	
+		teaCudaCheck(cudaHostAlloc(&fwdIndexList, size_t(numSamples)*sizeof(uint),cudaHostAllocPortable), "forward index allocation");
+		teaCudaCheck(cudaHostAlloc(&revIndexList, size_t(numSamples)*sizeof(uint),cudaHostAllocPortable), "reverse index allocation");
 
-    if (err!=cudaSuccess)
-    	FILE_LOG(LOG0) << "Error allocating memory: " << errCESTRing(err) << ".\n\n\n";
 
 	for (int idx = 0; idx < numSamples; idx++)
 	{
@@ -455,23 +448,24 @@ int runBuilder()
 		revIndexList[idx] = idx;
 	}
 
-	// ------------------Read in the label list and load up the sample list 
+	// ------------------Read in the label list and load up the sample list
 	ushort* labelList;
 	labelList =		0;
 	sampleList =	0;
 
-	cudaHostAlloc(&labelList, numSamples*sizeof(ushort),cudaHostAllocPortable);
-	cudaHostAlloc(&sampleList, numSamples*sizeof(Sample),cudaHostAllocPortable);
+	teaCudaCheck(cudaHostAlloc(&labelList, size_t(numSamples)*sizeof(ushort),cudaHostAllocPortable), "labels allocation");
+	teaCudaCheck(cudaHostAlloc(&sampleList, size_t(numSamples)*sizeof(Sample),cudaHostAllocPortable), "sample host allocation");
 
 	readList<ushort>(labelList, numSamples, (baseDir + "Labels.lbl"));
-	numClasses = *std::max_element(labelList, labelList + numSamples) + 1; // Classes start from 0 
+	numClasses = *std::max_element(labelList, labelList + numSamples) + 1; // Classes start from 0
+	if (numClasses > (1 << 14)) throw std::invalid_argument("Labels exceed 14-bit Sample label storage");
 	FILE_LOG(LOG0) << "Number of classes detected in Labels.lbl : " << numClasses;
 
 	for (int i = 0; i < numSamples; i++)
 	{
 		sampleList[i].bestTraj =	0;
 		sampleList[i].processed =	0;
-		sampleList[i].label =		labelList[i];		
+		sampleList[i].label =		labelList[i];
 	}
 
 	cudaFreeHost(labelList);
@@ -482,20 +476,20 @@ int runBuilder()
 
 	// ------------------Setup the tree nodes
 	nodes.resize(maxNodes);
-	for (int i = 0 ; i < maxNodes; i++) 
+	for (int i = 0 ; i < maxNodes; i++)
 	{
 		nodes[i].idxBegin =		 0;
 		nodes[i].idxEnd =		 numSamples - 1;
-		nodes[i].entropy =		 0;		// Started as 0. This will be the initial entropy of the first node despite it not being correct. This is because we advance according to the DIFFERENCE in entropies and the first node entropy is the same across all nodes 
+		nodes[i].entropy =		 0;		// Started as 0. This will be the initial entropy of the first node despite it not being correct. This is because we advance according to the DIFFERENCE in entropies and the first node entropy is the same across all nodes
 		nodes[i].bestDelta =	-1e20f;	// Best delta is as low as possible to start with
-		nodes[i].bestFeat =		9999;		// Initiated with invalid index
+		nodes[i].bestFeat =		0;		// Valid deterministic split for empty nodes
 		nodes[i].bestThresh =	 0;		// Difficult to define what an invalid threshold is so we leave it at 0
 	}
 
 
 	// ------------------Setup the devices and allocate memory
 	// Setup the worker pool
-	gpuDevice.resize(numDevices);			
+	gpuDevice.resize(numDevices);
 	for (int deviceId = 0; deviceId < numDevices; deviceId++)
 	{
 		gpuDevice[deviceId].init(deviceId + startDevice, numSamples, maxNodes, maxDepth, numClasses, foldingDepth);
@@ -505,19 +499,12 @@ int runBuilder()
 
 
 	// ------------------Setup the workers
-	gpuWorkerPool =	new GPUWorkerPool<Ftype>(&gpuDevice, numStreams); 
+	gpuWorkerPool =	new GPUWorkerPool<Ftype>(&gpuDevice, numStreams);
 
 
 	// ------------------Setup and start the featurepool manager
 	featurePool	=	new FeaturePool<Ftype>(numFeatures, poolSize, (baseDir + "F_"),  numSamples);
 	//__PROBLEM__: should make the base i.e. F_ be a user input value
-
-	// ------------------Read score weights from file
-	scoreWeights.resize(numClasses);
-	for (int i = 0 ; i < scoreWeights.size(); i++)
-		scoreWeights[i] = 1;
-	//readPairs(scoreWeights, (baseDir + "WeightsScore.txt"));
-	//__PROBLEM__: score weights should be returned? They are there to weight the errors
 
 
 	Clock totalclk,tmpclock;
@@ -525,20 +512,20 @@ int runBuilder()
 	// ------------------Start running the main loop
 
 	FILE_LOG(LOG0) << "Generating Tree: " << treeNum;
-	for (int d = 0; d <= maxDepth; d++) 
+	for (int d = 0; d <= maxDepth; d++)
 	{
 		FILE_LOG(LOG0) << "Generating Tree level: " << d;
 
 		//This copies nodes and sampleList (i.e. node traj and labels) to all the devices (no index mapping)
-		broadcastMapTasksData(); 
+		broadcastMapTasksData();
 
 		int n=0;
 		Clock clk;
 		clk.tic();
 		std::vector<std::thread> tasks;
-		while (1) 
+		while (1)
 		{
-			int featureToken = ((FeaturePool<Ftype>*)featurePool)->acquireFeatureToken(); 
+			int featureToken = ((FeaturePool<Ftype>*)featurePool)->acquireFeatureToken();
 
 			if (featureToken<0) // then the current set of tasks has been fully dispatched. The feature loader will reset after the previous line
 				break;
@@ -556,7 +543,7 @@ int runBuilder()
 			task.join();
 
 		//We now take all the devices which have held the intermediate reductions
-		//and reduce them all onto the CPU and update the tree 
+		//and reduce them all onto the CPU and update the tree
 		reduceMapTasksData(d);
 
 		// Extract histograms for this level
@@ -564,7 +551,7 @@ int runBuilder()
 
 		generateTreeFromBuildState(d,(baseDir + "Tree_" + treeName + ".tree"));
 		//generateSampleTrajectoriesFromBuildState(d, (baseDir + "Leaves_" + treeName + ".tlbl"));
-		
+
 		FILE_LOG(LOG0) << "Processed " << n << " tasks in " << std::fixed << clk.toc() << "s\n\n";
 	}
 
@@ -580,7 +567,7 @@ int runBuilder()
 	//getchar();
 
 	return 0;
-} 
+}
 
 #define stringify( name ) # name
 
@@ -599,7 +586,7 @@ const char* weightTypeName[]=
 	stringify( W_FILE )
 };
 
-int main (int argc, char ** argv) 
+int main (int argc, char ** argv)
 {
 	// ------------------Set up the parameters. -----------------
 	//printf("%i\n",sizeof(Sample));getchar();return 0;
@@ -614,7 +601,7 @@ int main (int argc, char ** argv)
 		FILE_LOG(logINFO) << "1. numFeatures  : How many features to use";
 		FILE_LOG(logINFO) << "2. poolSize     : Size of the preloaded pool of features";
 		FILE_LOG(logINFO) << "3. maxDepth     : Tree depth the be built to";
-		FILE_LOG(logINFO) << "4. foldingDepth : Depth at which to fold the tree when sending it to the cards";	
+		FILE_LOG(logINFO) << "4. foldingDepth : Depth at which to fold the tree when sending it to the cards";
 		FILE_LOG(logINFO) << "5. featureType  : F_CHAR, F_SHORT, F_INT, F_FLOAT";
 		FILE_LOG(logINFO) << "6. numSamples   : Number of samples to use from feature files";
 		FILE_LOG(logINFO) << "7. numThresh    : Number of thresholds to test";
@@ -631,40 +618,49 @@ int main (int argc, char ** argv)
 	}
 	else
 	{
-		FILE_LOG(logINFO) << "Using cmdline parameters:";		
+		FILE_LOG(logINFO) << "Using cmdline parameters:";
 		numFeatures =	atoi(argv[1]);
 		poolSize =		std::min(numFeatures,atoi(argv[2]));
 		maxDepth =		atoi(argv[3]);
 		foldingDepth =  atoi(argv[4]);
-		maxNodes =		pow(2.0f, maxDepth + 1) - 1; 
+		if (numFeatures <= 0 || poolSize <= 0 || maxDepth < 0 || maxDepth > 20 ||
+		    foldingDepth < 0 || foldingDepth > maxDepth)
+			throw std::invalid_argument("Require features/pool>0 and 0<=foldingDepth<=maxDepth<=20; CLI depth d means d+1 decisions");
+		maxNodes = (1u << (maxDepth + 1)) - 1;
 
 		if (std::string(argv[5]) == "F_CHAR")	featureType =	F_CHAR; else
 			if (std::string(argv[5]) == "F_SHORT")	featureType =	F_SHORT; else
 				if (std::string(argv[5]) == "F_INT")	featureType =	F_INT; else
 					if (std::string(argv[5]) == "F_FLOAT")	featureType =	F_FLOAT;
+					else throw std::invalid_argument("Unknown feature type");
 
 		numSamples =	atoi(argv[6]);
-		numThresh =		atoi(argv[7]);		
+		numThresh =		atoi(argv[7]);
 		startDevice =	atoi(argv[8]);
 		endDevice =		atoi(argv[9]);
+		if (numSamples <= 0 || numThresh < 1 || startDevice < 0 || endDevice < startDevice)
+			throw std::invalid_argument("Invalid sample, threshold or GPU range");
 
 		numDevices =	endDevice - startDevice + 1;
 
 		if (std::string(argv[10]) == "W_ONES")	weightType = W_ONES; else
 			if (std::string(argv[10]) == "W_APRIORI")	weightType = W_APRIORI; else
-				if (std::string(argv[10]) == "W_FILE")	weightType = W_FILE; 
-		
+				if (std::string(argv[10]) == "W_FILE")	weightType = W_FILE;
+				else throw std::invalid_argument("Unknown weight type");
+
 		numStreams =	1; //There seems to be no real advantage of using 2 streams and it seems to have a bug anyway. Could probably join gpuworker and gpudevice
 
 		baseDir		= std::string(argv[11]);
-		treePrefix	= std::string(argv[12]); 
-		treeNum  	= atoi(argv[13]); 
+		if (baseDir.empty()) throw std::invalid_argument("Dataset directory is empty");
+		if (baseDir.back() != '/') baseDir += '/';
+		treePrefix	= std::string(argv[12]);
+		treeNum  	= atoi(argv[13]);
 	}
 
 
 	char tn[100];
 	sprintf(tn, "%s_%.4i", treePrefix.c_str(), treeNum);
-	std::string logFile = baseDir + "LogFile_" + std::string(tn) + ".log"; 
+	std::string logFile = baseDir + "LogFile_" + std::string(tn) + ".log";
 	FILE* pFile = fopen(logFile.c_str(),"a");
 	Output2FILE::Stream() = pFile;
 

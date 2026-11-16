@@ -87,6 +87,12 @@ The smoke suite currently covers:
 
 These cases check exact training-label predictions on small synthetic inputs. Passing them validates those cases in the tested environment; it does not establish compatibility or correctness for every historical training regime. See [Testing](testing.md) for the assertions and coverage limits.
 
+The independent trainer suites additionally check deep/odd/empty routing, weighted
+splits, serialization and a bounded full 20-decision tree. Follow the
+[test reference](https://github.com/twerdster/tea/blob/main/tests/README.md) after
+the fast smoke checks. CLI depth 19 means 20 split decisions; see
+[deep training](deep-training.md) for memory, checkpoints and held-out selection.
+
 If you plan to use HandNet conversion, install the extra Python tooling and run its converter smoke test:
 
 ```bash

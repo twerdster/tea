@@ -9,6 +9,11 @@ Aaron Wetzler, Ron Slossberg, and Ron Kimmel. *Rule Of Thumb: Deep derotation fo
 This is the HandNet research context for the converter in this repository. The documentation
 review did not reproduce the paper or independently establish which Tea revision was used.
 
+The separate [2026 HandNet forest evaluation](handnet-forest-results.md) uses
+frozen training source `27ae728` with a new sampling/evaluation pipeline. Its
+adjusted-sensor localization metric is not a reproduction of the paper's
+mean-shift detector or score.
+
 ## Algorithmic Background
 
 Tea is a GPU-oriented trainer for randomized decision trees over large feature banks. The implementation is not presented in this repository as a formal standalone paper, but it belongs to the practical family of:

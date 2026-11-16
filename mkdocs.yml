@@ -40,5 +40,8 @@ nav:
   - Testing: testing.md
   - Benchmarking: benchmarking.md
   - HandNet: handnet.md
+  - HandNet Pilot Results: handnet-pilots.md
+  - HandNet Forest Results: handnet-forest-results.md
+  - Deep Training: deep-training.md
   - References: references.md
   - Maintaining This Site: docs-site.md

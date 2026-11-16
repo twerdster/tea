@@ -14,14 +14,22 @@ that work's HandNet data into Tea feature columns.
 
 *Implementation schematic. It contains no measured throughput or accuracy result.*
 
+The completed [HandNet forest report](docs/handnet-forest-results.md) records
+**0.374948 mean fingertip F1@15mm** for the three-tree ensemble versus **0.327988**
+for the validation-selected single tree on all **10,000 official test frames**.
+Both use 20 split decisions, 1,200 int8 features, cutoff 0.25 and minimum component
+support 3. The report includes denominators, limitations and
+[selected model downloads](https://github.com/twerdster/tea/releases/tag/handnet-forest-2026-11-16).
+
 ## Current implementation
 
 The source uses C++ standard-library threading, Make and CMake build paths, and Python tools for
 data generation, inspection, expansion, HandNet conversion and bounded synthetic benchmark runs.
 These are implemented workflows, not a claim that all historical configurations have been validated.
-The automated training checks are limited to two small synthetic cases at depths 0 and 1; the
-separate converter check exercises the HandNet-to-Tea data path on four synthetic MAT frames,
-not the original dataset archives.
+Independent CPU/GPU regressions cover routing, histogram tails, weighted split scoring,
+serialization and a bounded full 20-decision tree. The fast smoke suite still consists of two
+shallow cases; the separate converter smoke uses four synthetic MAT frames. Real-data results
+come from the separately audited held-out HandNet campaign, rather than those generated checks.
 
 Tea reads a directory containing:
 
@@ -31,7 +39,9 @@ Tea reads a directory containing:
 - `F_0000.feat`, `F_0001.feat`, …: one binary feature column per file, with datatype selected by the CLI.
 
 A run writes `Tree_0000.tree`, `Tree_0000.tree.labels` and `LogFile_<prefix>_0000.log` to the dataset
-directory for tree number 0. Snapshots are rewritten as training advances through the depths.
+directory for tree number 0. Current snapshots publish atomically as training advances; completed
+`Tree_0000.depthDD.tree` files are immutable inference checkpoints, not resumable build state.
+CLI depth 19 produces 20 split decisions.
 See [dataset format](docs/dataset-format.md) and [CLI/output details](docs/cli-and-outputs.md).
 
 ## Requirements and first run
@@ -66,37 +76,44 @@ preprocessing, and [benchmarking](docs/benchmarking.md) for CSV-producing synthe
 
 ## Validation scope
 
-Review date: 2026-11-12.
+The [test reference](tests/README.md) separates shallow data-path checks, independent native
+regressions and Python tooling tests. `make smoke` verifies known synthetic training labels at
+depths 0 and 1. `make handnet-smoke` checks generated conversion layout and nonempty shallow
+training outputs; it does not verify its predicted labels.
 
-[tests/run_smoke_tests.py](tests/run_smoke_tests.py) defines two cases: `root-depth0` and
-`depth1-balanced`. Both use generated `F_FLOAT` features, unit sample weights, GPU 0 and equal
-maximum/folding depths. The runner checks process exit, nonempty tree/label/log outputs, exact
-training-label predictions and a `Depth X: 100.0000%` log line. That percentage is training-set
-self-success for a deliberately separable synthetic dataset, not held-out accuracy.
+The repaired trainer also supports:
 
-`make handnet-smoke` runs [tests/run_handnet_converter_test.py](tests/run_handnet_converter_test.py).
-It creates four synthetic MAT frames, converts them to 1,024 samples and 40 `F_CHAR` features,
-checks file sizes and labels 0–6, estimates memory under a configured 500 MB cap, then runs a
-depth-1 tree and checks for nonempty outputs. It does **not** compare its predicted labels with
-expected labels. Coverage consists of two training cases and one conversion scenario; it does not
-include an application benchmark or broad regression coverage.
+```bash
+make trainer-kernels
+python3 tests/trainer_regression.py --tea ./Tea
+python3 tests/trainer_depth20.py --tea ./Tea
+python3 -m unittest discover -s tests -p 'test_*.py'
+```
 
-This documentation revision reviewed the implementation and test assertions and rebuilt the
-documentation. It did not compile CUDA, run the GPU tests, start training or reproduce the paper's
-results. The repository does not include raw logs for a current toolchain validation. Historical
-run descriptions in the guides are identified as reports rather than newly verified results.
+The independent native expectations cover odd/empty branches, folded and streamed features,
+weighted entropy, serialized posteriors and the full dense 20-decision layout. They establish
+checked code behavior. The [final HandNet evaluation](docs/handnet-forest-results.md) separately
+checks natural-distribution segmentation/localization with frozen validation selection and all
+10,000 test frames. Training self-success and generated-data correctness are not held-out scores.
+
+The training/evaluation source remains
+[`27ae728`](https://github.com/twerdster/tea/tree/27ae728e9cb012d2255337d9b3583bbe7f66b3cc).
+Later release packaging and documentation commits do not change the trained weights. This
+upstream documentation merge rebuilt MkDocs; it did not rerun CUDA tests or launch training.
 
 ## Limitations
 
-The small tests do not cover deep trees, all feature types, alternate weighting modes, multiple
-GPUs or application-level accuracy. Features must be prepared before training; the core trainer
-does not extract image features. Synthetic benchmark timing and training-set self-success do not
-measure HandNet fingertip detection accuracy. Pixel-label imbalance can make that self-success
-high even when a model predicts the dominant class.
+Features must be prepared before training; the core trainer does not extract image features.
+Multiple-GPU execution and every historical numerical configuration are not established by the
+reported regressions. The memory cap is an estimate, not a guarantee that all runtime allocations
+fit. Use the [deep-training workflow](docs/deep-training.md) for bounds and verification.
 
-Before a large run, inspect the input format and estimate memory using the linked tools. The
-memory cap is an estimate, not a guarantee that all runtime allocations fit. Further work is
-needed for held-out prediction/evaluation and deeper regression cases.
+The reported HandNet scores remain modest, with substantial localization and absent-finger false
+positives. Official random-frame splits do not establish subject/session independence. Numerical
+CPU parity on three training frames with synthetic timestamps establishes neither tracking
+accuracy nor latency, and it does not validate deep Metal/mobile/FPGA inference. These results do
+not reproduce the historical paper's mean-shift detector or metric. The original MATLAB/MEX
+preprocessor has not been independently matched against the maintained Python feature contract.
 
 ## Documentation and attribution
 

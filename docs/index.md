@@ -5,6 +5,11 @@ offline. The related BMVC 2015 paper [*Rule of Thumb: Deep Derotation for Improv
 is by Aaron Wetzler, Ron Slossberg and Ron Kimmel. The repository's converter maps HandNet data
 from that work to the feature-column format used by Tea.
 
+The completed [three-tree HandNet report](handnet-forest-results.md) records
+0.374948 mean fingertip F1@15mm on all 10,000 test frames versus 0.327988 for the
+validation-selected single tree. It includes exact settings, denominators,
+limitations and selected model downloads.
+
 ## Data flow
 
 1. Read labels and threshold metadata, then load feature columns from disk.
@@ -23,11 +28,17 @@ The repository includes Make/CMake builds, C++ standard-library host threading a
 for generated datasets, conversion, memory estimation and synthetic timing sweeps. Linux and an
 NVIDIA CUDA device are required for training.
 
-The automated training suite has two synthetic cases at depths 0 and 1. A separate synthetic
-HandNet conversion scenario checks the data path and nonempty training outputs; it does not
-check predicted-label correctness. See [Testing](testing.md) for the exact assertions and limits.
-There is no current raw build/test log in this checkout. The documentation revision did not run
-GPU training or reproduce the paper's results.
+Two shallow smoke cases check generated training labels. A separate generated
+HandNet scenario checks conversion layout and nonempty outputs, without verifying
+that scenario's predicted labels. Independent native suites additionally cover
+routing/histogram edge cases, weights, folding, streaming and the full dense
+20-decision tree. See [Testing](testing.md) for exact assertions and limits.
+
+Real held-out segmentation/localization quality comes from the separate audited
+HandNet campaign: settings were selected on 300 validation frames before opening the
+10,000 test frames. The complete 2,773-frame validation cohort is descriptive and
+includes that selection subset. This documentation merge performs static/CPU
+checks; it does not rerun CUDA training or reproduce the historical paper metric.
 
 ## Read next
 
@@ -38,5 +49,6 @@ GPU training or reproduce the paper's results.
 - [HandNet](handnet.md): MAT archive conversion and evaluation qualifications.
 - [Benchmarking](benchmarking.md): synthetic runtime sweeps and CSV fields.
 
-Large datasets, multi-GPU execution, deep trees and alternative weighting modes need validation
-beyond the small synthetic checks. Timing on generated data is not an application accuracy result.
+Reported checks do not establish every historical configuration or multiple-GPU execution.
+Official random-frame HandNet splits do not establish subject/session independence.
+Generated-data timing and numerical CPU parity are separate from application accuracy.

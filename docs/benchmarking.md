@@ -100,3 +100,7 @@ For stable and interpretable runs:
 ## Relationship to the historical workflow
 
 The Python runner replaces the earlier MATLAB command-generation layer with explicit dataset-generation, subprocess and CSV-writing steps. This documentation revision did not execute a sweep, and no synthetic timing value here should be read as an application accuracy result.
+
+The separate [HandNet forest report](handnet-forest-results.md) records real
+held-out segmentation/localization results. It does not turn this synthetic
+benchmark page into a measured application-throughput claim.

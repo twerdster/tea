@@ -1,0 +1,98 @@
+{
+  "schema": "handnet-label-semantics-aggregate-v1",
+  "source": "HandNet/TrainData",
+  "source_frames": 202198,
+  "sample_seed": 20261115,
+  "positive_label0_inside_seg": 0,
+  "positive_label1to7_outside_seg": 0,
+  "positive_hand_pixels": 527947,
+  "positive_background_pixels": 1762316,
+  "zero_depth_labeled_hand": 162,
+  "positive_depth_raw_class_hist": [
+    1762316,
+    18582,
+    18947,
+    21963,
+    18857,
+    15854,
+    357423,
+    76321
+  ],
+  "intrinsics": [
+    [
+      240.30773969,
+      0.0,
+      178.29264758
+    ],
+    [
+      0.0,
+      240.07488538,
+      117.95811188
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "scope": "training/validation data semantics; no fittedmodel or testaccuracyclaim",
+  "label_to_corresponding_pos_projection_px": [
+    {
+      "count": 95,
+      "mean": 2.679208082492054,
+      "median": 2.389759630477433,
+      "p90": 5.044385109303888
+    },
+    {
+      "count": 96,
+      "mean": 3.689720484007079,
+      "median": 3.7760157253222886,
+      "p90": 5.910397317949991
+    },
+    {
+      "count": 96,
+      "mean": 2.9870703805830146,
+      "median": 2.8714124789245385,
+      "p90": 5.482625895112544
+    },
+    {
+      "count": 95,
+      "mean": 3.4571733344373565,
+      "median": 3.451695420424433,
+      "p90": 5.794398926901934
+    },
+    {
+      "count": 100,
+      "mean": 3.7913284550392716,
+      "median": 3.847661743498293,
+      "p90": 5.924818924254722
+    }
+  ],
+  "source_archive_sha256": "40c1878124fba91bf76f1ff15d25d067ea416a828b5670623123dc87c3921ac0",
+  "audited_frame_count": 100,
+  "ordered_identity_list_sha256": "e35307aca7945b2b794bcb9d70fc294e3b7f8f8452159bb2125e9fd7e5433113",
+  "ordered_identity_list_encoding": {
+    "description": "SHA256 of the original ordered identity-record list encoded as UTF-8 JSON",
+    "json_sort_keys": true,
+    "json_separators": [
+      ",",
+      ":"
+    ],
+    "json_ensure_ascii": true,
+    "array_order": "original frame order preserved"
+  },
+  "unique_sessions": 10,
+  "session_frame_counts_sorted": [
+    5,
+    6,
+    7,
+    8,
+    10,
+    11,
+    12,
+    13,
+    14,
+    14
+  ],
+  "source_audit_schema": "handnet-label-semantics-audit-v1"
+}

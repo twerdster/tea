@@ -1,8 +1,9 @@
 # Testing
 
-Tea has two generated training cases and one separate generated HandNet conversion scenario.
-Their presence describes the available checks; this documentation revision did not run the CUDA
-binary, and this checkout contains no current raw execution record.
+Tea has two fast generated training cases, a separate generated HandNet conversion scenario,
+and independent native deep/weighted regression suites. These code checks are separate from
+[real held-out HandNet results](handnet-forest-results.md). This documentation merge did not
+rerun CUDA tests; it verified the static documentation and CPU tooling as recorded.
 
 ## Training cases
 
@@ -45,9 +46,29 @@ This scenario does not compare predicted labels with expected values or require 
 self-success percentage. It uses generated input, so no HandNet download is needed, but CUDA
 training and the Python dependencies are still required.
 
+## Native deep and weighted regression coverage
+
+The generated shallow smoke cases remain fast build checks. The repaired trainer
+also has independent CPU/GPU kernel and full serialization regressions:
+
+```bash
+make trainer-kernels
+python tests/trainer_regression.py --tea ./Tea
+python tests/trainer_depth20.py --tea ./Tea
+```
+
+Coverage includes odd/singleton partitioning, all histogram methods and feature
+types, folded empty nodes, streaming feature reloads, weighted entropy and every
+serialized posterior. The bounded nine-sample depth test exercises exactly 20
+decisions (CLI 19), 1,048,575 split nodes, 2,097,151 posteriors and all 20 immutable
+checkpoints. See the [test reference](https://github.com/twerdster/tea/blob/main/tests/README.md) for details.
+
+These tests establish checked code behavior. Real HandNet segmentation and
+localization quality require the separate [held-out protocol](handnet.md).
+
 ## Coverage limits
 
-The three scenarios do not establish deeper-tree correctness, all feature types, other weighting
-modes, multiple GPU execution, real HandNet prediction accuracy or current-toolchain compatibility.
-A larger run described in a guide is not part of this regression suite. Keep performance and
-application evaluation records separate from these small data-path checks.
+Generated checks establish their exercised cases, not every historical configuration
+or multiple-GPU execution. Application quality and timing require separate evidence.
+The official random-frame HandNet evaluation does not establish subject independence,
+and numerical CPU parity does not establish temporal accuracy or latency.

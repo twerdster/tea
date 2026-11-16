@@ -1,0 +1,227 @@
+{
+  "additional_validation_diagnostic": {
+    "baseline_foreground": "none",
+    "baseline_hits_15mm": 344,
+    "baseline_learned_foreground_iou": 0.5007516471301253,
+    "baseline_macro_f1_at_15mm": 0.23650137167567786,
+    "campaign_selection_changed": false,
+    "classes": 8,
+    "diagnostic_foreground": "near-component",
+    "diagnostic_hits_15mm": 317,
+    "diagnostic_learned_foreground_iou": 0.7741419968775556,
+    "diagnostic_macro_f1_at_15mm": 0.2182403853553375,
+    "false_positives_on_absent_unchanged": 94,
+    "included_in_original_48_configuration_grid": false,
+    "interpretation": "Mask IoU improves but the target fingertip F1 falls; keep the frozen none-foreground setting.",
+    "minimum_pixels": 3,
+    "probability_threshold": 0.5,
+    "probe_size_pixel_mm": 25000,
+    "same_model_and_300_validation_frames": true,
+    "split_decisions": 20
+  },
+  "chosen_for_full_size_training": {
+    "classes": 8,
+    "final_depth_threshold_and_ensemble_result": "pending; reselect on validation after three full-size trees",
+    "pilot_macro_f1_at_15mm": 0.23650137167567786,
+    "pilot_probability_threshold": 0.5,
+    "pilot_selected_split_decisions": 20,
+    "probe_size_pixel_mm": 25000
+  },
+  "limits": [
+    "Official splits randomize frames; participant/session independence is not established.",
+    "Final test inputs were not used for selection.",
+    "These are pilot validation scores, not final full-size or ensemble accuracy.",
+    "Connected-component sensor-centre F1 is not a reproduction of the paper metric."
+  ],
+  "quality_context": {
+    "interpretation": "Modest pilot localization quality. Foreground policies and pixel domains differ; selection is by fingertip F1, not pixel accuracy.",
+    "selected_eight_class": {
+      "foreground": "none; learned background",
+      "foreground_iou": 0.5007516471301253,
+      "foreground_precision": 0.5315070980460456,
+      "foreground_recall": 0.8964143824679534,
+      "hand_class_macro_iou": 0.14247502461806114
+    },
+    "seven_class_probe25000": {
+      "foreground": "near-component depth ROI",
+      "foreground_iou": 0.7877883636513767,
+      "foreground_precision": 0.8576319440583924,
+      "foreground_recall": 0.9063100943886176,
+      "hand_class_macro_iou": 0.2216678926935191
+    }
+  },
+  "report_date": "2026-11-15",
+  "rows": [
+    {
+      "classes": 7,
+      "coords_sha256": "ba9f0753a5f0922921563cbe1fa8847cad654f6a9c7efe59bfcdbee45ae58266",
+      "foreground": "near-component",
+      "learned_background": false,
+      "macro_f1_at_15mm": 0.008744431028344093,
+      "model_sha256": "0fa4b144c2c369d0d26fbff3273129489aa65fa05f9e8f75bca56faaad4bba71",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 50,
+      "selected_split_decisions": 12,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 911260
+    },
+    {
+      "classes": 7,
+      "coords_sha256": "2177d319e1baa7134f903e638cc46420627469d9dbc59ecf024b6fdd423a4b77",
+      "foreground": "near-component",
+      "learned_background": false,
+      "macro_f1_at_15mm": 0.11562264706238752,
+      "model_sha256": "030ad8bca3bb2f41e500eb70e959fb5eec30d354e5ddcd49d2e4da8ce67bb482",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 5000,
+      "selected_split_decisions": 16,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 911260
+    },
+    {
+      "classes": 7,
+      "coords_sha256": "a6e272570706649df1d21abb5d09266356ee5ed7a38b82f411b5ec7f632d00a3",
+      "foreground": "near-component",
+      "learned_background": false,
+      "macro_f1_at_15mm": 0.22733854735397374,
+      "model_sha256": "a65254854d365fd6f8bd29ab98ecb8ea28b9fcfdf68d8878211c163b53dd2017",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 25000,
+      "selected_split_decisions": 20,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 911260
+    },
+    {
+      "classes": 7,
+      "coords_sha256": "5e01c713d50ed28e27e4de0cc20e9f1eafaa97a95327cf270fa80219a6879fe6",
+      "foreground": "near-component",
+      "learned_background": false,
+      "macro_f1_at_15mm": 0.20285844084889035,
+      "model_sha256": "2112faefa56a9278549994dc9e25f38ca6d966661a4d2a67efeb9ca23c91f14f",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 50000,
+      "selected_split_decisions": 20,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 911260
+    },
+    {
+      "classes": 8,
+      "coords_sha256": "ba9f0753a5f0922921563cbe1fa8847cad654f6a9c7efe59bfcdbee45ae58266",
+      "foreground": "none",
+      "learned_background": true,
+      "macro_f1_at_15mm": 0.0025592513477774386,
+      "model_sha256": "d709e4630d702667feeeb223d21bb1f3dfc14db288283ef8df3c7b27eabf4649",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 50,
+      "selected_split_decisions": 16,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 932968
+    },
+    {
+      "classes": 8,
+      "coords_sha256": "2177d319e1baa7134f903e638cc46420627469d9dbc59ecf024b6fdd423a4b77",
+      "foreground": "none",
+      "learned_background": true,
+      "macro_f1_at_15mm": 0.1275995219513832,
+      "model_sha256": "38a0ba53ebebe8ff64a1550ec80411067bbc00c1a96ff9ddadb7582701004835",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 5000,
+      "selected_split_decisions": 12,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 932968
+    },
+    {
+      "classes": 8,
+      "coords_sha256": "a6e272570706649df1d21abb5d09266356ee5ed7a38b82f411b5ec7f632d00a3",
+      "foreground": "none",
+      "learned_background": true,
+      "macro_f1_at_15mm": 0.23650137167567786,
+      "model_sha256": "ce4ffcc675750fc65a65b115814b0179c69fde511683145145851d3589cfadba",
+      "probability_threshold": 0.5,
+      "probe_size_pixel_mm": 25000,
+      "selected_split_decisions": 20,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 932968
+    },
+    {
+      "classes": 8,
+      "coords_sha256": "5e01c713d50ed28e27e4de0cc20e9f1eafaa97a95327cf270fa80219a6879fe6",
+      "foreground": "none",
+      "learned_background": true,
+      "macro_f1_at_15mm": 0.20902068490368517,
+      "model_sha256": "9b720bf6310ed3a1c701d17d55b7dd881e90f025e60b1f3244ce4643eb1d9815",
+      "probability_threshold": 0.25,
+      "probe_size_pixel_mm": 50000,
+      "selected_split_decisions": 20,
+      "trained_split_decisions": 20,
+      "training_frames": 2000,
+      "training_samples": 932968
+    }
+  ],
+  "schema": "tea-handnet-pilot-summary-v1",
+  "scope": "Bounded single-tree validation pilots; no full-size forest or test result.",
+  "training_design": {
+    "coordinate_seed": 101,
+    "eight_class_cap_per_class": 64,
+    "feature_type": "F_CHAR",
+    "features": 1200,
+    "frame_seed": 20261115,
+    "pilot_count": 8,
+    "same_frames_across_pilots": true,
+    "same_pixels_across_scales_within_class_mode": true,
+    "sample_cap_per_frame": 512,
+    "sampling": "per-class capped without replacement; positive-depth pixels",
+    "sampling_seed": 101,
+    "seven_class_cap_per_class": 73,
+    "training_frames_per_pilot": 2000
+  },
+  "training_source_revision": "27ae728e9cb012d2255337d9b3583bbe7f66b3cc",
+  "validation_design": {
+    "configuration_count": 48,
+    "frame_id_hash_encoding": "SHA256 of UTF8 JSON ordered frame_id list, separators comma/colon, ensure_ascii=true",
+    "frame_seed": 420,
+    "frames": 300,
+    "metric": "mean per-fingertip F1 at15mm",
+    "metric_formula": "mean_c[2*hits_c/(scorable_present_c+scorable_predictions_c+predictions_on_absent_c)]",
+    "missing_predictions_count_as_failures": true,
+    "minimum_pixels": 3,
+    "component_connectivity": 4,
+    "ordered_frame_id_list_sha256": "c1bdf5aa55f59dd59ba3d4766e2b0af420275c0cb70c3fcd1d33a94623a55942",
+    "probability_threshold_grid": [
+      0.25,
+      0.5
+    ],
+    "selection_uses_test": false,
+    "split": "official validation",
+    "split_decisions_grid": [
+      12,
+      16,
+      20
+    ],
+    "subject_independence_established": false
+  },
+  "verification": {
+    "all_48_counts_and_f1_recomputed_from_same_300_raw_validation_frames": true,
+    "all_eight_models_trained_to_20_decisions": true,
+    "independent_training_traversals_per_model": 1024,
+    "no_training_frame_id_overlap_detected": true,
+    "selected_model_cpu_parity": {
+      "foreground_policies": [
+        "none",
+        "near-component"
+      ],
+      "input_frames": 3,
+      "input_split": "train",
+      "interpretation": "Numerical equivalence only; synthetic cadence establishes neither tracking accuracy nor latency.",
+      "labels_heaps_masks_probability_byte_mismatches": 0,
+      "maximum_geometry_tracker_difference_mm_rounded": 3.411e-13
+    }
+  }
+}

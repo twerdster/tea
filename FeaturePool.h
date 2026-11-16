@@ -54,7 +54,7 @@ public:
 	  _numFeatures(numFeatures), _poolSize(poolSize)
 	  {
 		  assert(numFeatures >= poolSize && numFeatures && poolSize);
-		  _loaderEnabled = (numFeatures != poolSize); 
+		  _loaderEnabled = (numFeatures != poolSize);
 		  _stopLoader = false;
 		  _needsReset = false;
 		  _loadCount = 0;
@@ -70,16 +70,16 @@ public:
 		  _waitingQueue = new AtomicQueue<int>;
 
 		  if (_loaderEnabled)
-			  for (int token = 0; token < _poolSize; token++) 			 
-				  // Intialize the swap tokens	
-				  _availableQueue.push(token);		
+			  for (int token = 0; token < _poolSize; token++)
+				  // Intialize the swap tokens
+				  _availableQueue.push(token);
 
 		  else {
 			  Clock clk;
 			  clk.tic();
-			  for (int token = 0; token < _poolSize; token++) 	
+			  for (int token = 0; token < _poolSize; token++)
 			  {
-				  // This loads all data and adds all features to available list. 
+				  // This loads all data and adds all features to available list.
 				  _loadAcquire();
 				 // boost::thread loaderThread(&FeaturePool::_load,this,token,token);
 				  _load(token,token);
@@ -87,7 +87,7 @@ public:
 			  FILE_LOG(LOG2) << "Total load time " << clk.toc() << "s";
 		  }
 
-		  //This wait is necessary to gaurantee correct operation of the first 
+		  //This wait is necessary to gaurantee correct operation of the first
 		  //run because it would be possible for an acquireFeature call to see an empty availabeList and then reset itself
 		  //incorrectly
 		  _waitForLoads();
@@ -103,19 +103,19 @@ public:
 	  int acquireFeatureToken()
 	  {
 		  // If the loader has finished a full set then no more features can be made available
-		  // until the loader has been reset. The main thread will be made aware of this by this 
+		  // until the loader has been reset. The main thread will be made aware of this by this
 		  // function returning a NULL value
 		  {
 			  //We lock this so that access to the list and _totalLoaded is atomic
 			  std::lock_guard<std::mutex> lock(_queueMutex);
-			  if ((_totalLoaded == _numFeatures || !_loaderEnabled) && _processingQueue->empty()  ) 
+			  if ((_totalLoaded == _numFeatures || !_loaderEnabled) && _processingQueue->empty()  )
 			  {
 				  _reset();
 				  return -1;
 			  }
 		  }
 
-		  // Now, wait until there is a token available in the available list which will be added by the 
+		  // Now, wait until there is a token available in the available list which will be added by the
 		  // classes main thread loop when the load is finished
 		  int token;
 		  _processingQueue->wait_and_pop(token);
@@ -129,7 +129,7 @@ public:
 		  // Make the token used by a particular feature available for loading into
 		  if (_loaderEnabled)
 			  _availableQueue.push(token);
-	  }	  
+	  }
 
 	  //Shuts the featureLoader thread down and releases all resources.
 	  ~FeaturePool()
@@ -143,7 +143,7 @@ public:
 		  _waitForLoads();
 		  // These all need to be propperly destructed. Its not critical atm because FeaturePool should only
 		  //be released at the very end of the program
-		  // _processingQueue and _waitingQueue might need to check that they are not being used by any threads	
+		  // _processingQueue and _waitingQueue might need to check that they are not being used by any threads
 		  //_pool is a vector and a destructor will be automatically called for each element
 		  delete _processingQueue;
 		  delete _waitingQueue;
@@ -155,8 +155,8 @@ private:
 	  //all threads have finished the behaviour will be undefined
 	  void _reset()
 	  {
-		  if (_loaderEnabled) 
-		  {			
+		  if (_loaderEnabled)
+		  {
 			  // Swap the waiting list and available list
 			  _tmp = _waitingQueue;
 			  _waitingQueue = _processingQueue;
@@ -164,7 +164,7 @@ private:
 
 			  // Tell the feature loader thread it can add new features into the available list
 			  _totalLoaded = _processingQueue->size();
-		  } 
+		  }
 		  else
 		  {
 			  for (int token = 0; token < _numFeatures; token++)
@@ -187,14 +187,14 @@ private:
 		assert(_loadCount>=0);
 
 		if (!_loadCount) // Then all the load threads have finished
-			_loadConditionVar.notify_one(); 
+			_loadConditionVar.notify_one();
 	}
 
 	void _waitForLoads()
 	{
 		std::unique_lock<std::mutex> lock(_loadMutex);
 
-		while (_loadCount) 
+		while (_loadCount)
 			_loadConditionVar.wait(lock);
 	}
 
@@ -203,27 +203,27 @@ private:
 		//_loadAquire is called BEFORE the thread is launched and then _loadRelease is called at the end of this method
 
 		// Request the Feature class to do the load
-		_pool[token].load(fId);			
+		_pool[token].load(fId);
 
 		// Add the newly loaded feature as being available or put it on the waiting list
 		// The lock is to ensure that the correct list will be updated without corruption if reset is called
-		std::lock_guard<std::mutex> lock(_queueMutex); 
+		std::lock_guard<std::mutex> lock(_queueMutex);
 
-		if (_totalLoaded < _numFeatures) 
-		{			
+		if (_totalLoaded < _numFeatures)
+		{
 			_processingQueue->push(token);
 			_totalLoaded++;
 		}
-		else 
+		else
 			_waitingQueue->push(token);
 
 		// Release the acquire count for the load threads
-		_loadRelease();				
+		_loadRelease();
 	}
 
 	void loadThread(int token, int fId)
 	{
-		// Here we acquire a load and then load a particular feature into the given slot identified by the token					
+		// Here we acquire a load and then load a particular feature into the given slot identified by the token
 		_loadAcquire();
 		_load(token,fId);
 		//boost::thread loadThread(&FeaturePool::_load,this, token, fId); // The load thread releases the acquire at the end
@@ -232,31 +232,28 @@ private:
 	void _featureLoader()
 	{
 		Clock clk;
-		while (!_stopLoader) 
+		while (!_stopLoader)
 		{
 
 			clk.tic();
-			char* dropCacheStr = getenv("DROP_CACHE");
-			if (dropCacheStr && strcmp(dropCacheStr, "1") == 0)
-			{
-				FILE_LOG(LOG2) << " ---- NB : attempting to drop disk buffer/cache (sudo required) ... " ;
-			 	discardSystemResult("echo 3 | tee /proc/sys/vm/drop_caches");
-			}
+            // Feature reload uses the normal operating-system file cache.
+            // Historical DROP_CACHE is deliberately ignored: this process
+            // never changes global cache state or runs cache-control commands.
 
-			// Run through all the features 
+			// Run through all the features
 			for (int fId = 0; fId < _numFeatures; fId++)
-			{				
+			{
 				// Get the token representing the currently available spot for loading data into
 				int token;
 				_availableQueue.wait_and_pop(token);
 				if (_stopLoader)
 					return;
 
-				loadThread(token,fId);				
+				loadThread(token,fId);
 			}
 
 			//We need to wait for all the threaded loads to return i.e. execute _loadRelease
-			_waitForLoads();		
+			_waitForLoads();
 
 			//printf("Total load time for all features:%f\n",clk.toc());
 		}

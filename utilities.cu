@@ -5,78 +5,38 @@
 #include <assert.h>
 #include <cuda_runtime.h>
 
-template <class Ftype, class Ftype4>
-__global__ 
-	void _gpuScatteredWrite(Ftype* dst, const Ftype4 *src, const uint4 *index, const uint dataCount)
+// Scalar scatter/gather supports final chunks of any size.
+template <class Ftype>
+__global__ void scatterKernel(Ftype* dst, const Ftype* src, const uint* index,
+                              uint count)
 {
-	const int idx = ( blockIdx.x*gridDim.y + blockIdx.y ) * blockDim.x + threadIdx.x;
-
-	if (idx < dataCount)   
-	{
-		uint4 _index = index[idx];
-		Ftype4 data = src[idx];
-
-		dst[ _index.x ] = data.x;
-		dst[ _index.y ] = data.y;
-		dst[ _index.z ] = data.z;
-		dst[ _index.w ] = data.w;    		
-	}
+    uint i = (blockIdx.x*gridDim.y + blockIdx.y)*blockDim.x + threadIdx.x;
+    if (i < count) dst[index[i]] = src[i];
 }
-
 template <class Ftype, class Ftype4>
-void gpuScatteredWrite(Ftype* dst, const Ftype *src, const uint *index, const uint dataCount, cudaStream_t stream)
+void gpuScatteredWrite(Ftype* dst, const Ftype* src, const uint* index,
+                       uint count, cudaStream_t stream)
 {
-	assert( dataCount % (4) == 0 );
-
-	const float THREADS = 512;
-	const float BLOCKS = ceil(dataCount/THREADS/4.0f);
-	uint sqrtVal = ceil(sqrt(BLOCKS));        
-	dim3 numBlocks(sqrtVal,sqrtVal);
-	dim3 numThreads(THREADS);
-
-	_gpuScatteredWrite<<< numBlocks, numThreads , 0, stream >>>(dst, (const Ftype4*)src, (const uint4*)index, dataCount/4);
-	if (cudaGetLastError()!=cudaSuccess){ 
-		FILE_LOG(logERROR) << "Error occurred in gpuScatteredWrite";
-		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
-	}
+    if (!count) return;
+    uint side = static_cast<uint>(ceil(sqrt(ceil(count/256.0))));
+    scatterKernel<<<dim3(side, side), 256, 0, stream>>>(dst, src, index, count);
+    teaCudaCheck(cudaGetLastError(), "scatterKernel");
 }
-
-template <class Ftype, class Ftype4>
-__global__ 
-	void _gpuScatteredRead(Ftype4* dst, const Ftype *src, const uint4 *index, const uint dataCount)
+template <class Ftype>
+__global__ void gatherKernel(Ftype* dst, const Ftype* src, const uint* index,
+                             uint count)
 {
-	const int idx = ( blockIdx.x*gridDim.y + blockIdx.y ) * blockDim.x + threadIdx.x;
-
-	if (idx < dataCount)   
-	{
-		uint4 _index = index[idx];
-		Ftype4 *data = &dst[idx];
-
-		data->x = src[ _index.x ] ;
-		data->y = src[ _index.y ] ;
-		data->z = src[ _index.z ] ;
-		data->w = src[ _index.w ] ;    		
-	}
+    uint i = (blockIdx.x*gridDim.y + blockIdx.y)*blockDim.x + threadIdx.x;
+    if (i < count) dst[i] = src[index[i]];
 }
-
 template <class Ftype, class Ftype4>
-void gpuScatteredRead(Ftype* dst, const Ftype *src, const uint *index, const uint dataCount, cudaStream_t stream)
+void gpuScatteredRead(Ftype* dst, const Ftype* src, const uint* index,
+                      uint count, cudaStream_t stream)
 {
-	assert( dataCount % (4) == 0 );
-
-	const float THREADS = 512;
-	const float BLOCKS = ceil(dataCount/THREADS/4.0f);
-	uint sqrtVal = ceil(sqrt(BLOCKS));        
-	dim3 numBlocks(sqrtVal,sqrtVal);
-	dim3 numThreads(THREADS);
-
-	_gpuScatteredRead<<< numBlocks, numThreads , 0, stream >>>(	(Ftype4*)dst, src, (const uint4*)index, dataCount/4);	
-	if (cudaGetLastError()!=cudaSuccess){ 
-		FILE_LOG(logERROR) << "Error occurred in gpuScatteredRead";
-		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
-	}
+    if (!count) return;
+    uint side = static_cast<uint>(ceil(sqrt(ceil(count/256.0))));
+    gatherKernel<<<dim3(side, side), 256, 0, stream>>>(dst, src, index, count);
+    teaCudaCheck(cudaGetLastError(), "gatherKernel");
 }
 
 template <typename Ftype>
@@ -96,9 +56,9 @@ __global__
 template <typename Ftype>
 void updateSamples(const Ftype* d_feature, GPUDevice *gpuDevice, const uint nodeBegin, const uint nodeEnd, cudaStream_t stream)
 {
-	const float THREADS = 256; 
+	const float THREADS = 256;
 	const float BLOCKS = ceil(gpuDevice->numSamples()/THREADS);
-	uint sqrtVal = ceil(sqrt(BLOCKS));        
+	uint sqrtVal = ceil(sqrt(BLOCKS));
 	dim3 numBlocks(sqrtVal,sqrtVal);
 	dim3 numThreads(THREADS);
 
@@ -106,10 +66,10 @@ void updateSamples(const Ftype* d_feature, GPUDevice *gpuDevice, const uint node
 		d_feature, gpuDevice->samples(), gpuDevice->nodes(),	gpuDevice->numSamples(), nodeBegin, nodeEnd);
 
 	cudaStreamSynchronize(stream);
-	if (cudaGetLastError()!=cudaSuccess){ 
+	if (cudaGetLastError()!=cudaSuccess){
 		FILE_LOG(logERROR) << "Error occurred in updateSamples";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
+		discardSystemResult("pause");
 	}
 }
 
@@ -124,9 +84,9 @@ __global__
 
 void resetUpdateFlag(RFTrainNode *nodes, const uint numNodes, cudaStream_t stream)
 {
-	const float THREADS = 32; 
+	const float THREADS = 32;
 	const float BLOCKS = ceil(numNodes/THREADS);
-	uint sqrtVal = ceil(sqrt(BLOCKS));        
+	uint sqrtVal = ceil(sqrt(BLOCKS));
 	dim3 numBlocks(sqrtVal,sqrtVal);
 	dim3 numThreads(THREADS);
 
@@ -134,10 +94,10 @@ void resetUpdateFlag(RFTrainNode *nodes, const uint numNodes, cudaStream_t strea
 		(nodes,	numNodes);
 
 	cudaStreamSynchronize(stream);
-	if (cudaGetLastError()!=cudaSuccess){ 
+	if (cudaGetLastError()!=cudaSuccess){
 		FILE_LOG(logERROR) << "Error occurred in resetUpdateFlag";
 		FILE_LOG(logERROR) << "Error: " << errCESTRing(cudaGetLastError());
-		discardSystemResult("pause");		
+		discardSystemResult("pause");
 	}
 }
 
