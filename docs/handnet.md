@@ -2,7 +2,10 @@
 
 The Python converter reads HandNet `Data_*.mat` frames and writes native Tea
 feature columns. The [deep training workflow](deep-training.md) covers validated
-20-decision training, three-tree ensembles and held-out evaluation.
+20-decision training, three-tree ensembles and held-out evaluation. The maintained
+Python feature contract has not been independently matched to the historical
+MATLAB/MEX preprocessing. See `scripts/handnet_to_tea.py` and the generated-input
+`tests/run_handnet_converter_test.py` for their separate implementation/check scope.
 
 ## Labels and sampling
 
@@ -142,7 +145,9 @@ final metrics after configuration is frozen.
 
 `make handnet-smoke` tests generated conversion data. Native routing, histogram
 and serialization correctness are checked by the [trainer tests](https://github.com/twerdster/tea/blob/main/tests/README.md).
-The earlier modernization run completed CLI depth 8 on 10,000 frames and
-19,949,016 samples, but its self-success matched the dominant class rate. It was
-executed before the routing/histogram repairs and does not validate classifier
-quality. No new HandNet accuracy claim follows from the repaired synthetic tests.
+The earlier guide reported CLI depth 8 on 10,000 frames and 19,949,016 samples;
+that historical account lacks its raw logs/device/output artifacts in the public
+checkout, and its dominant-class self-success does not validate classifier quality.
+It predates the native repairs. The later
+[three-tree forest report](handnet-forest-results.md) provides the separate audited
+20-decision held-out evaluation. Synthetic success alone is not an accuracy claim.

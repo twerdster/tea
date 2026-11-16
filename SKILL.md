@@ -117,3 +117,19 @@ runtime ledgers, raw frame identities and machine paths stay excluded.
 The optional 200m/256 recipe remains unlaunched pending authorized run-count
 reconciliation. Its prospective recipe is preserved, but comparisons after
 original-test outcome disclosure are post-exposure exploratory engineering.
+
+## Documentation maintenance and upstream merges
+
+Keep the README's requirements and first-run commands concise; use the guides for
+advanced build/CLI/conversion workflows. Preserve upstream operator explanations,
+source notices, attribution and schematic figures while reconciling claims with
+verified current evidence. No standalone software license is assigned by a docs
+change. Check diagram labels/captions as well as Markdown links.
+
+Separate source/assertion inspection, generated fixtures, executed regressions,
+held-out application results and benchmark timing. Rebuild MkDocs after docs
+edits; do not start training or benchmarks for prose-only changes. Record checks
+that were not rerun without erasing the evidence of independently verified prior
+runs. Current coverage includes deep/weighted native regressions and real HandNet
+held-out results; it does not establish every historical configuration, multiple
+GPU execution, historical MATLAB parity or a paper-metric reproduction.

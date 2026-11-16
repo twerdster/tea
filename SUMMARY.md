@@ -82,3 +82,14 @@ Task-local machine paths, active job identities, budgets, storage verification a
 monitoring state belong in ignored `runs/current/HANDOFF.md`, `WATCHLIST.json`,
 `STATE.json`, `CAMPAIGN.json` and `BUDGET.json`. Consult live evidence before resuming
 work; source documentation is not proof that a job completed.
+
+## Upstream documentation reconciliation — 2026-11-16
+
+The incoming main documentation changes preserve the concise first-run setup,
+CUDA/host operator chain, attribution and `docs/images/tea-training-pipeline.svg`.
+The figure remains an unmeasured implementation schematic. Validation statements
+now distinguish shallow smoke cases, independent deep/weighted regressions and
+this campaign's real held-out results. The docs merge performs static/CPU checks;
+it does not launch CUDA training or claim every historical or multi-GPU case.
+The maintained Python feature contract has not been matched to historical
+MATLAB/MEX output. Original credits and software-license notices are preserved.

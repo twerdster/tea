@@ -19,7 +19,7 @@ The maintained benchmark entry point is:
 
 It generates synthetic Tea datasets directly in the repository's native file format, runs the `Tea` binary, parses logs, and writes a CSV summary.
 
-## VRAM Safety Cap
+## Estimated VRAM cap
 
 The runner estimates per-device VRAM usage before each run and rejects any case above the configured cap.
 
@@ -29,7 +29,7 @@ Default:
 500 MB
 ```
 
-This is useful when you want bounded experiments on a busy GPU or a conservative shared machine.
+The cap limits the estimator's calculation, not actual allocations or other processes' memory use. A case below the estimate can still fail at runtime.
 
 For existing Tea datasets, use the standalone estimator:
 
@@ -84,7 +84,7 @@ The runner builds synthetic datasets that are intentionally easy to split so the
 That means the benchmark is best interpreted as:
 
 - a throughput and scaling tool
-- a regression detector for runtime changes
+- a way to compare runtime changes on controlled synthetic inputs
 
 It is not meant to stand in for a published application-level accuracy benchmark.
 
@@ -97,11 +97,10 @@ For stable and interpretable runs:
 - start with `F_CHAR` unless you want datatype comparisons
 - keep the VRAM cap conservative on shared systems
 
-## Relationship To The Old Benchmark Workflow
+## Relationship to the historical workflow
 
-The historical repository used MATLAB to generate batches of benchmark commands. That layer has been replaced by this Python runner because it is:
+The Python runner replaces the earlier MATLAB command-generation layer with explicit dataset-generation, subprocess and CSV-writing steps. This documentation revision did not execute a sweep, and no synthetic timing value here should be read as an application accuracy result.
 
-- easier to read
-- easier to modify
-- easier to automate
-- easier to keep in the maintained path
+The separate [HandNet forest report](handnet-forest-results.md) records real
+held-out segmentation/localization results. It does not turn this synthetic
+benchmark page into a measured application-throughput claim.

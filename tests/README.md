@@ -12,7 +12,7 @@ make handnet-smoke CUDA_ARCH=sm_86
 make trainer-kernels CUDA_ARCH=sm_86
 python tests/trainer_regression.py --tea ./Tea
 python tests/trainer_depth20.py --tea ./Tea
-python -m pytest tests/test_handnet_pipeline.py tests/test_training_guard.py
+python -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Use an architecture supported by the installed CUDA toolkit. Native CUDA checks
@@ -54,7 +54,9 @@ python tests/gen_smoke_dataset.py /tmp/tea-smoke-depth1 --scenario depth1
 ```
 
 The [HandNet converter smoke](run_handnet_converter_test.py) creates a synthetic
-MAT archive, converts it, checks native outputs and runs a shallow tree. The
+MAT archive, converts it, checks native layout/labels and nonempty outputs, estimates
+memory under a 500 MB cap and runs a shallow tree. It does not verify that scenario's
+predicted labels; no real dataset archive is downloaded. The
 [Python pipeline tests](test_handnet_pipeline.py) cover feature arithmetic,
 coordinate reuse, identities/splits, class-aware sampling, optional learned
 background, native forest decoding and evaluation behavior. The
@@ -68,3 +70,15 @@ majority-class self-success before native repairs. Use the
 [deep-training workflow](../docs/deep-training.md) and
 [HandNet held-out protocol](../docs/handnet.md) to evaluate real models with frozen
 training/validation/test membership and actual inference outputs.
+
+The held-out campaign's [final result report](../docs/handnet-forest-results.md)
+provides the separately audited application metrics. This documentation merge did
+not rerun CUDA tests or benchmarks; multi-GPU and historical MATLAB parity remain
+outside the reported evidence.
+
+To inspect or derive a generated Tea dataset separately:
+
+```bash
+python3 scripts/expand_dataset.py inspect /path/to/data single
+python3 scripts/expand_dataset.py expand /path/to/data single /tmp/tea-expanded 1000 200 7 single
+```

@@ -60,15 +60,12 @@ The folding depth changes how histogram storage and passes over node subsets are
 
 Shallow examples can use `foldingDepth == maxDepth`; deeper runs can use a lower folding depth to bound histogram buffers. Both folded and unfolded paths have regression coverage. Require `0 <= foldingDepth <= maxDepth <= 20`.
 
-## Why This Can Be Fast
+## Work distribution
 
-Tea's performance comes from three ideas working together:
-
-- precomputed feature columns
-- GPU histogram and threshold evaluation
-- overlapped host-side loading and worker dispatch
-
-That makes it particularly useful when the expensive part of training is evaluating large numbers of candidate features against a large sample set.
+The implementation separates disk loading, host coordination and GPU split evaluation.
+Feature columns can be prepared while workers process earlier columns. The performance
+of that overlap depends on storage, feature counts, device memory and GPU configuration;
+this description is not a measured speedup.
 
 ## Limits and deep training
 
@@ -81,3 +78,7 @@ the full 20-decision dense model. This does not establish application accuracy.
 Use [deep training](deep-training.md) for bounded queueing, memory, atomic depth
 checkpoints and validation selection. Use natural-distribution held-out data for
 segmentation/localization metrics rather than training self-success.
+
+The [completed forest report](handnet-forest-results.md) records the separate
+held-out application results; it does not establish every historical or multi-GPU
+configuration or reproduce the paper's detector metric.

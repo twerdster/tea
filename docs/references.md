@@ -1,12 +1,18 @@
 # References
 
-## Tea In Published Work
+## Related HandNet publication
 
 Aaron Wetzler, Ron Slossberg, and Ron Kimmel. *Rule Of Thumb: Deep derotation for improved fingertip detection*. BMVC 2015.
 
 - arXiv: <https://arxiv.org/abs/1507.05726>
 
-Tea was used in that work for large-scale decision-tree training over precomputed features.
+This is the HandNet research context for the converter in this repository. The documentation
+review did not reproduce the paper or independently establish which Tea revision was used.
+
+The separate [2026 HandNet forest evaluation](handnet-forest-results.md) uses
+frozen training source `27ae728` with a new sampling/evaluation pipeline. Its
+adjusted-sensor localization metric is not a reproduction of the paper's
+mean-shift detector or score.
 
 ## Algorithmic Background
 
@@ -21,7 +27,7 @@ Tea is a GPU-oriented trainer for randomized decision trees over large feature b
 This documentation site is meant to describe:
 
 - what Tea does
-- how to build and verify it today
+- the documented build procedure and available small checks
 - how to prepare datasets
 - how to run maintained tests and benchmarks
 
