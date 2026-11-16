@@ -133,3 +133,13 @@ that were not rerun without erasing the evidence of independently verified prior
 runs. Current coverage includes deep/weighted native regressions and real HandNet
 held-out results; it does not establish every historical configuration, multiple
 GPU execution, historical MATLAB parity or a paper-metric reproduction.
+
+Before publication, inspect the complete branch diff, including older evidence
+fixtures. Public results contain aggregate counts, reviewed hashes and explicit
+encoding for identity-list hashes; they omit actual raw frame/session identity
+records and machine paths. Preserve the exact original privately before an
+aggregate-only repair. Keep the frozen training revision/history and model bytes
+unchanged; synthetic identities in generated test fixtures remain distinct from
+real dataset membership records.
+Use an aggregate-specific schema and identify its source audit schema separately;
+do not imply that a sanitized summary has the raw audit output's record layout.

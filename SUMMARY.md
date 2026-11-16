@@ -93,3 +93,12 @@ this campaign's real held-out results. The docs merge performs static/CPU checks
 it does not launch CUDA training or claim every historical or multi-GPU case.
 The maintained Python feature contract has not been matched to historical
 MATLAB/MEX output. Original credits and software-license notices are preserved.
+
+The public 100-frame training label-semantics evidence is aggregate-only: pixel
+counts, intrinsics and source-archive hash are retained, with the audited frame
+count and a declared canonical ordered-identity-list hash. Exact identity records
+are preserved privately; public evidence omits raw frame/session identifiers.
+This inventory repair does not rewrite training history, change the frozen
+27ae728 training code or alter models.
+Its `handnet-label-semantics-aggregate-v1` schema explicitly records the original
+raw audit schema separately.
