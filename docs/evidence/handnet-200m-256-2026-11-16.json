@@ -1,0 +1,984 @@
+{
+  "schema": "tea-handnet-200m-256-results-v1",
+  "date": "2026-11-16",
+  "scope": "Post-exposure exploratory engineering; earlier original test outcomes were disclosed. No test-driven retuning.",
+  "training_source_revision": "27ae728e9cb012d2255337d9b3583bbe7f66b3cc",
+  "evaluation_source_sha256": "1a9a6db81be4f59793bae48813a8a3854ced60da4b2df3960987c93071ac85e4",
+  "classes": [
+    "thumb",
+    "index",
+    "middle",
+    "ring",
+    "pinky",
+    "palm",
+    "wrist",
+    "background"
+  ],
+  "feature_profile": {
+    "coordinate_arithmetic": "float32",
+    "coordinate_precision": "float32-complete-sum",
+    "coordinate_rule": "truncate-after-base-plus-offset-over-depth",
+    "coordinate_unit": "pixel*millimetres",
+    "depth_unit": "millimetres",
+    "max_diff": 250.0,
+    "maximum": 127.0,
+    "missing": {
+      "both": 0,
+      "first": 127.0,
+      "second": -127.0
+    },
+    "quantization": "ceil-after-clamp",
+    "type": "F_CHAR"
+  },
+  "probe_size_pixel_mm": 25000,
+  "split_thresholds": 16,
+  "folding_depth": 12,
+  "frame_fraction": 0.9,
+  "matched_ordered_training_frame_bag": true,
+  "recipes": [
+    {
+      "name": "seed204",
+      "role": "new exploratory recipe",
+      "frame_seed": 201,
+      "coordinate_seed": 204,
+      "sampling_seed": 204,
+      "frames": 181979,
+      "samples": 200216884,
+      "features": 256,
+      "decisions": 20,
+      "classes": 8,
+      "model_sha256": "22c5f0763282d8cb816b021cc10f370c0ad398c1aa0e26fe83d4fb34ec67f8df",
+      "coords_sha256": "d30587695928cb350c274e6d7d91a472e1b6c27d8ffcfa54c6d76e43a81bf03c",
+      "public_manifest_sha256": "606237ac0db02df7ca4f0c04d7bdc6855edece0f7b30927e3495bc473b331a5d"
+    },
+    {
+      "tree": 0,
+      "seed": 201,
+      "frames": 181979,
+      "samples": 84759330,
+      "model_sha256": "a81c6725acaf7f5016ecc124c711c71e729c12faec0a2470b2fe75d9ac15fdf6",
+      "coords_sha256": "af10d62c05eaad40c722aaed702610295ba064863d34d6f3fc1ab7cb3025376c",
+      "decisions": 20,
+      "classes": 8,
+      "frame_seed": 201,
+      "coordinate_seed": 201,
+      "sampling_seed": 201,
+      "features": 1200,
+      "name": "baseline201",
+      "role": "primary matched ordered training-frame bag"
+    }
+  ],
+  "sampling_caps_per_class_per_frame": {
+    "seed204": 169,
+    "baseline201": 64
+  },
+  "new_feature_payload_bytes": 51255522304,
+  "selected_settings": {
+    "split_decisions": 20,
+    "probability_threshold": 0.25,
+    "minimum_component_pixels": 3,
+    "foreground": "none",
+    "fingertip_class_ids": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "component_connectivity": 4,
+    "centroid": "probability-weighted"
+  },
+  "selection": {
+    "frames": 300,
+    "source_split": "validation",
+    "settings_per_model": 6,
+    "settings_total": 12,
+    "tie_rule": "maximize mean fingertip F1@15mm, then fewer decisions, then higher cutoff",
+    "frozen_before_new_full_cohort_evaluations": true,
+    "original_test_outcomes_already_disclosed": true,
+    "settings": [
+      {
+        "model_name": "seed204",
+        "settings": [
+          {
+            "split_decisions": 12,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.16914656566501307
+          },
+          {
+            "split_decisions": 12,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.14026678436280776
+          },
+          {
+            "split_decisions": 16,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.24696627113826314
+          },
+          {
+            "split_decisions": 16,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.22123625019824752
+          },
+          {
+            "split_decisions": 20,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.3335495196010765
+          },
+          {
+            "split_decisions": 20,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.3021335979556298
+          }
+        ]
+      },
+      {
+        "model_name": "baseline201",
+        "settings": [
+          {
+            "split_decisions": 12,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.1820752131175311
+          },
+          {
+            "split_decisions": 12,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.16333777908036592
+          },
+          {
+            "split_decisions": 16,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.2648102931130331
+          },
+          {
+            "split_decisions": 16,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.23936785247463538
+          },
+          {
+            "split_decisions": 20,
+            "probability_threshold": 0.25,
+            "macro_fingertip_f1_at15mm": 0.3314673088356947
+          },
+          {
+            "split_decisions": 20,
+            "probability_threshold": 0.5,
+            "macro_fingertip_f1_at15mm": 0.3008779345723803
+          }
+        ]
+      }
+    ]
+  },
+  "cohorts": {
+    "selection_validation": 300,
+    "full_validation": 2773,
+    "test": 10000,
+    "training_union_unique_frames": 202010,
+    "training_full_validation_test_overlaps": 0,
+    "full_validation_includes_selection": true
+  },
+  "results": [
+    {
+      "classification_hand_macro_iou": 0.2318862819727668,
+      "counts": {
+        "absent": [
+          170,
+          91,
+          138,
+          267,
+          238
+        ],
+        "detected": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "false_positive_on_absent": [
+          170,
+          91,
+          138,
+          267,
+          238
+        ],
+        "present": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "sensor_pos_detected": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "sensor_pos_present": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ]
+      },
+      "errors": {
+        "raw_label_to_pos_correspondence_px": {
+          "count": 12961,
+          "mean": 3.3853523947540336,
+          "median": 3.11739069923747,
+          "p90": 6.005897014617103
+        },
+        "to_pos_first5_mm": {
+          "count": 12961,
+          "mean": 47.536567068456144,
+          "median": 18.79825534184002,
+          "p90": 86.92399949608024
+        },
+        "to_pos_first5_projected_px": {
+          "count": 12961,
+          "mean": 21.573297936593082,
+          "median": 8.054179708278847,
+          "p90": 53.111385529986016
+        },
+        "to_raw_label_centroid_px": {
+          "count": 12961,
+          "mean": 19.719287269908996,
+          "median": 5.174950893767668,
+          "p90": 52.38572765534001
+        }
+      },
+      "hits_label_px": {
+        "10": [
+          2009,
+          1756,
+          1711,
+          1447,
+          1783
+        ],
+        "15": [
+          2109,
+          1947,
+          1947,
+          1679,
+          1923
+        ],
+        "5": [
+          1659,
+          1248,
+          1163,
+          947,
+          1313
+        ]
+      },
+      "hits_mm": {
+        "10": [
+          516,
+          315,
+          302,
+          296,
+          388
+        ],
+        "15": [
+          1170,
+          888,
+          872,
+          705,
+          891
+        ],
+        "20": [
+          1702,
+          1439,
+          1381,
+          1140,
+          1307
+        ]
+      },
+      "learned_foreground": {
+        "false_negative": 798670,
+        "false_positive": 7816166,
+        "iou": 0.6207097059350177,
+        "precision": 0.6433314923800459,
+        "recall": 0.9463867421858612,
+        "true_negative": 39900982,
+        "true_positive": 14098205
+      },
+      "model_name": "seed204",
+      "per_finger_f1_at_15mm": [
+        0.43526785714285715,
+        0.32557286892758935,
+        0.3224852071005917,
+        0.2670960409168403,
+        0.3357196684250188
+      ],
+      "per_finger_sensor_errors_mm": [
+        {
+          "count": 2603,
+          "mean": 41.128829916188536,
+          "median": 16.001107327816378,
+          "p90": 82.38428688008823
+        },
+        {
+          "count": 2682,
+          "mean": 49.61853158237064,
+          "median": 18.855969516714637,
+          "p90": 90.63829049235252
+        },
+        {
+          "count": 2635,
+          "mean": 45.57533172082436,
+          "median": 19.173873524183865,
+          "p90": 71.39735120600008
+        },
+        {
+          "count": 2506,
+          "mean": 52.757441924350225,
+          "median": 21.764548223653694,
+          "p90": 83.04188958469739
+        },
+        {
+          "count": 2535,
+          "mean": 48.7909472393331,
+          "median": 19.503354235421924,
+          "p90": 104.45432728295265
+        }
+      ],
+      "raw_positive_depth_pixels": 62614023,
+      "raw_positive_depth_support": [
+        523485,
+        602771,
+        612138,
+        465912,
+        409104,
+        10255686,
+        2027779,
+        47717148,
+        0
+      ],
+      "split": "validation",
+      "splits": 20,
+      "threshold": 0.25,
+      "source_evaluation_sha256": "fec1fbb3f51f45d9ee7b4012144acdbcbf076160f2626660a6c8183c5fecd941",
+      "macro_fingertip_f1_at15mm": 0.33722832850257944,
+      "frames": 2773
+    },
+    {
+      "classification_hand_macro_iou": 0.22946968740022541,
+      "counts": {
+        "absent": [
+          170,
+          91,
+          138,
+          267,
+          238
+        ],
+        "detected": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "false_positive_on_absent": [
+          170,
+          91,
+          138,
+          267,
+          238
+        ],
+        "present": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "sensor_pos_detected": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ],
+        "sensor_pos_present": [
+          2603,
+          2682,
+          2635,
+          2506,
+          2535
+        ]
+      },
+      "errors": {
+        "raw_label_to_pos_correspondence_px": {
+          "count": 12961,
+          "mean": 3.3853523947540336,
+          "median": 3.11739069923747,
+          "p90": 6.005897014617103
+        },
+        "to_pos_first5_mm": {
+          "count": 12961,
+          "mean": 43.223989515632994,
+          "median": 18.37124296843294,
+          "p90": 77.68022824104534
+        },
+        "to_pos_first5_projected_px": {
+          "count": 12961,
+          "mean": 19.842857740989945,
+          "median": 7.724271240307121,
+          "p90": 46.90397734214177
+        },
+        "to_raw_label_centroid_px": {
+          "count": 12961,
+          "mean": 17.935815961000685,
+          "median": 4.916874103394587,
+          "p90": 46.16214515453123
+        }
+      },
+      "hits_label_px": {
+        "10": [
+          2056,
+          1841,
+          1738,
+          1523,
+          1796
+        ],
+        "15": [
+          2153,
+          2031,
+          1970,
+          1743,
+          1943
+        ],
+        "5": [
+          1672,
+          1331,
+          1184,
+          1062,
+          1319
+        ]
+      },
+      "hits_mm": {
+        "10": [
+          527,
+          339,
+          350,
+          324,
+          406
+        ],
+        "15": [
+          1187,
+          959,
+          898,
+          718,
+          906
+        ],
+        "20": [
+          1722,
+          1519,
+          1414,
+          1166,
+          1310
+        ]
+      },
+      "learned_foreground": {
+        "false_negative": 702688,
+        "false_positive": 7783974,
+        "iou": 0.6258225606986758,
+        "precision": 0.645831423293332,
+        "recall": 0.9528298384728341,
+        "true_negative": 39933174,
+        "true_positive": 14194187
+      },
+      "model_name": "baseline201",
+      "per_finger_f1_at_15mm": [
+        0.4415922619047619,
+        0.35160403299725024,
+        0.33210059171597633,
+        0.2720212161394203,
+        0.3413715146948003
+      ],
+      "per_finger_sensor_errors_mm": [
+        {
+          "count": 2603,
+          "mean": 39.79773357403812,
+          "median": 15.911008233201873,
+          "p90": 74.39725549841664
+        },
+        {
+          "count": 2682,
+          "mean": 40.69300530367512,
+          "median": 18.1146224401269,
+          "p90": 73.92307863847223
+        },
+        {
+          "count": 2635,
+          "mean": 41.219410870247145,
+          "median": 18.735804933693178,
+          "p90": 68.62866126617081
+        },
+        {
+          "count": 2506,
+          "mean": 46.13895359296247,
+          "median": 21.431352503619703,
+          "p90": 77.32672868969865
+        },
+        {
+          "count": 2535,
+          "mean": 48.62194163604581,
+          "median": 19.24716047524009,
+          "p90": 104.83880598361912
+        }
+      ],
+      "raw_positive_depth_pixels": 62614023,
+      "raw_positive_depth_support": [
+        523485,
+        602771,
+        612138,
+        465912,
+        409104,
+        10255686,
+        2027779,
+        47717148,
+        0
+      ],
+      "split": "validation",
+      "splits": 20,
+      "threshold": 0.25,
+      "source_evaluation_sha256": "5b14acb77eb844f5736e2abcaf8c87d98f3e198400607a1dabdd0241a5568a7d",
+      "macro_fingertip_f1_at15mm": 0.3477379234904418,
+      "frames": 2773
+    },
+    {
+      "classification_hand_macro_iou": 0.23458513240404447,
+      "counts": {
+        "absent": [
+          601,
+          309,
+          552,
+          916,
+          854
+        ],
+        "detected": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "false_positive_on_absent": [
+          601,
+          309,
+          552,
+          916,
+          854
+        ],
+        "present": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "sensor_pos_detected": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "sensor_pos_present": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ]
+      },
+      "errors": {
+        "raw_label_to_pos_correspondence_px": {
+          "count": 46768,
+          "mean": 3.3803170620265304,
+          "median": 3.142648378971532,
+          "p90": 6.013568425901921
+        },
+        "to_pos_first5_mm": {
+          "count": 46768,
+          "mean": 48.040152452207785,
+          "median": 18.97674406006294,
+          "p90": 88.9816337221004
+        },
+        "to_pos_first5_projected_px": {
+          "count": 46768,
+          "mean": 21.58594433047375,
+          "median": 8.026578179871795,
+          "p90": 53.455156120566556
+        },
+        "to_raw_label_centroid_px": {
+          "count": 46768,
+          "mean": 19.692823796000162,
+          "median": 5.106563492832716,
+          "p90": 52.35212698174675
+        }
+      },
+      "hits_label_px": {
+        "10": [
+          7278,
+          6235,
+          6064,
+          5462,
+          6380
+        ],
+        "15": [
+          7646,
+          6901,
+          6886,
+          6188,
+          6919
+        ],
+        "5": [
+          5868,
+          4580,
+          4228,
+          3610,
+          4790
+        ]
+      },
+      "hits_mm": {
+        "10": [
+          1847,
+          1074,
+          1021,
+          997,
+          1319
+        ],
+        "15": [
+          4174,
+          3154,
+          3037,
+          2567,
+          3055
+        ],
+        "20": [
+          6120,
+          5027,
+          4870,
+          4129,
+          4644
+        ]
+      },
+      "learned_foreground": {
+        "false_negative": 2893231,
+        "false_positive": 28403608,
+        "iou": 0.6204202672824128,
+        "precision": 0.6429826468870659,
+        "recall": 0.9464689170856778,
+        "true_negative": 144370172,
+        "true_positive": 51154452
+      },
+      "model_name": "seed204",
+      "per_finger_f1_at_15mm": [
+        0.4303314603845559,
+        0.32034939820222436,
+        0.3123200329082682,
+        0.2690211695661287,
+        0.3191267105400606
+      ],
+      "per_finger_sensor_errors_mm": [
+        {
+          "count": 9399,
+          "mean": 42.39634683908191,
+          "median": 16.054201571488235,
+          "p90": 85.6684674660072
+        },
+        {
+          "count": 9691,
+          "mean": 51.31867456201198,
+          "median": 19.3458401976486,
+          "p90": 93.5331026996933
+        },
+        {
+          "count": 9448,
+          "mean": 47.14410106437382,
+          "median": 19.45143607546011,
+          "p90": 74.18118582086859
+        },
+        {
+          "count": 9084,
+          "mean": 51.2374643121101,
+          "median": 21.906742849845838,
+          "p90": 84.98704862691463
+        },
+        {
+          "count": 9146,
+          "mean": 48.11619484981991,
+          "median": 19.73485140737215,
+          "p90": 103.5670406375393
+        }
+      ],
+      "raw_positive_depth_pixels": 226821463,
+      "raw_positive_depth_support": [
+        1873174,
+        2186443,
+        2202827,
+        1701743,
+        1484852,
+        36984101,
+        7614543,
+        172773780,
+        0
+      ],
+      "split": "test",
+      "splits": 20,
+      "threshold": 0.25,
+      "source_evaluation_sha256": "9f664af34fc97f6b976f211f7d2c3f2593c3667bb3692c4b28b348e3a438e5c2",
+      "macro_fingertip_f1_at15mm": 0.33022975432024754,
+      "frames": 10000
+    },
+    {
+      "classification_hand_macro_iou": 0.23102053978554907,
+      "counts": {
+        "absent": [
+          601,
+          309,
+          552,
+          916,
+          854
+        ],
+        "detected": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "false_positive_on_absent": [
+          601,
+          309,
+          552,
+          916,
+          854
+        ],
+        "present": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "sensor_pos_detected": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ],
+        "sensor_pos_present": [
+          9399,
+          9691,
+          9448,
+          9084,
+          9146
+        ]
+      },
+      "errors": {
+        "raw_label_to_pos_correspondence_px": {
+          "count": 46768,
+          "mean": 3.3803170620265304,
+          "median": 3.142648378971532,
+          "p90": 6.013568425901921
+        },
+        "to_pos_first5_mm": {
+          "count": 46768,
+          "mean": 44.26084136367906,
+          "median": 18.601025449017094,
+          "p90": 79.40589665326462
+        },
+        "to_pos_first5_projected_px": {
+          "count": 46768,
+          "mean": 20.13667141765697,
+          "median": 7.7726859599554015,
+          "p90": 47.98396675914479
+        },
+        "to_raw_label_centroid_px": {
+          "count": 46768,
+          "mean": 18.195590416654465,
+          "median": 4.940942358184888,
+          "p90": 46.67021310824838
+        }
+      },
+      "hits_label_px": {
+        "10": [
+          7375,
+          6468,
+          6099,
+          5696,
+          6473
+        ],
+        "15": [
+          7753,
+          7151,
+          6973,
+          6438,
+          7022
+        ],
+        "5": [
+          5928,
+          4692,
+          4239,
+          3916,
+          4793
+        ]
+      },
+      "hits_mm": {
+        "10": [
+          1865,
+          1160,
+          1086,
+          1088,
+          1353
+        ],
+        "15": [
+          4226,
+          3311,
+          3162,
+          2689,
+          3083
+        ],
+        "20": [
+          6260,
+          5201,
+          4953,
+          4285,
+          4721
+        ]
+      },
+      "learned_foreground": {
+        "false_negative": 2578251,
+        "false_positive": 28320507,
+        "iou": 0.6248702563453197,
+        "precision": 0.6450616787662916,
+        "recall": 0.952296733978402,
+        "true_negative": 144453273,
+        "true_positive": 51469432
+      },
+      "model_name": "baseline201",
+      "per_finger_f1_at_15mm": [
+        0.43569256147224084,
+        0.3362957696409527,
+        0.32517482517482516,
+        0.28180674910920145,
+        0.3220516034680873
+      ],
+      "per_finger_sensor_errors_mm": [
+        {
+          "count": 9399,
+          "mean": 41.25368269304887,
+          "median": 15.981025288632171,
+          "p90": 80.31725621282625
+        },
+        {
+          "count": 9691,
+          "mean": 44.321530924073485,
+          "median": 18.78919068905978,
+          "p90": 79.10402908673626
+        },
+        {
+          "count": 9448,
+          "mean": 43.10361626215292,
+          "median": 19.08551258341391,
+          "p90": 68.64348592460992
+        },
+        {
+          "count": 9084,
+          "mean": 45.71490143369973,
+          "median": 21.268562226991495,
+          "p90": 77.41182723964776
+        },
+        {
+          "count": 9146,
+          "mean": 47.03811261872191,
+          "median": 19.474004464497085,
+          "p90": 96.75218502011967
+        }
+      ],
+      "raw_positive_depth_pixels": 226821463,
+      "raw_positive_depth_support": [
+        1873174,
+        2186443,
+        2202827,
+        1701743,
+        1484852,
+        36984101,
+        7614543,
+        172773780,
+        0
+      ],
+      "split": "test",
+      "splits": 20,
+      "threshold": 0.25,
+      "source_evaluation_sha256": "825b832efbdaf7d16a139eaa48db54d928c1f70be2107f18a70ed9fc602b78c0",
+      "macro_fingertip_f1_at15mm": 0.3402043017730615,
+      "frames": 10000
+    }
+  ],
+  "secondary_references": {
+    "role": "Previously published original campaign; separate from matched baseline201",
+    "report": "handnet-forest-results.md",
+    "evidence": "handnet-forest-2026-11-16.json",
+    "same_full_cohort_order_and_metric_semantics_verified": true,
+    "ensemble_201_202_203": {
+      "full_validation_f1": 0.3833437004586795,
+      "test_f1": 0.37494755678731473
+    },
+    "validation_selected_single_202": {
+      "full_validation_f1": 0.3370599042841775,
+      "test_f1": 0.32798765233655836
+    }
+  },
+  "independent_audit": {
+    "status": "passed",
+    "raw_truth_identities_supports_geometry_counts_hits_errors_f1_checked": true,
+    "all_input_hashes_unchanged": true,
+    "predictions_independently_rerun": false,
+    "image_feasibility_slack_pixels": 1e-08,
+    "centers_clamped_or_scoring_values_changed": false,
+    "verifier_sha256": "9a217213ce4f9c2dc30a2d43f60c055add9df4e6562e31c3df59ba9a0fa2eaa7",
+    "metric_core_sha256": "bc8b56efdc5cb2d361d9380a6cdc38dec29958b29e8452bf2162ca5aec0b7617"
+  },
+  "native_parity": {
+    "platforms": [
+      "linux-x86_64",
+      "macos-arm64"
+    ],
+    "training_frames": 3,
+    "foreground_modes": [
+      "none",
+      "near-component"
+    ],
+    "labels_posteriors_heaps_masks_byte_exact": true,
+    "observation_max_difference_mm": 4.760636329592671e-13,
+    "tracker_max_numeric_difference_mixed_units": 4.760636329592671e-13,
+    "linux_macos_native_outputs_byte_exact": true,
+    "synthetic_timestamp_step_seconds": 0.1,
+    "accuracy_or_latency_established": false,
+    "evidence": "https://github.com/twerdster/depthtrack/blob/main/docs/tea-handnet-seed204-validation.json"
+  },
+  "release": {
+    "tag": "handnet-200m-256-seed204-2026-11-16",
+    "zip": "tea-handnet-200m-256-seed204.zip",
+    "zip_sha256": "53b8fc95c5c8bc3f24c191e5ffda8a80787f64635e45d9e1a16c9dfbdf9006c6",
+    "zip_bytes": 12955585,
+    "original_forest_release_and_defaults_preserved": true
+  },
+  "limits": [
+    "Sample count, features and coordinate/pixel seeds changed together; this does not isolate a sample-count effect.",
+    "All new contrasts are post-exposure exploratory, not independent untouched confirmation or statistical significance.",
+    "Official randomized frame splits do not establish subject/session independence.",
+    "Largest-component detections against adjusted sensor positions are not the historical paper mean-shift metric.",
+    "Both primary models predicted all 3232 absent-finger test occasions; error summaries condition on detected/scorable fingers.",
+    "Balanced-training votes are not established as calibrated probabilities.",
+    "Native parity on three training depths with synthetic cadence establishes no tracking accuracy, latency or deep Metal/mobile/FPGA execution."
+  ]
+}
