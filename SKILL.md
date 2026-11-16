@@ -114,9 +114,41 @@ training revision 27ae728 explicit and separate from packaging/documentation com
 Review attribution/data terms and public contents before publication. Private
 runtime ledgers, raw frame identities and machine paths stay excluded.
 
-The optional 200m/256 recipe remains unlaunched pending authorized run-count
-reconciliation. Its prospective recipe is preserved, but comparisons after
-original-test outcome disclosure are post-exposure exploratory engineering.
+The separate 200m/256 recipe requires explicit additional-attempt authorization.
+Its live authorization and phase belong in the private ledgers. Preserve its
+frozen recipe; comparisons after original-test outcome disclosure are
+post-exposure exploratory engineering.
+
+## Launching the separate 200m/256 comparison
+
+Use `scripts/run_handnet_comparison.py` with an explicit private runtime config,
+authorization, exact published-source review and operational monitor receipt.
+Read `docs/handnet-comparison.md` for their contracts. Keep machine identities,
+paths and these receipts out of public source and model assets. Preserve the
+original frozen training export, all three trees and original budget bytes.
+Only the new residual ledger may receive the extra guard's training charge.
+
+Authorization must count the old three attempts plus one new seed204 attempt,
+with no new pilots, at most 16 active hours for this run and 48 hours aggregate.
+Never copy old settlements into the residual ledger or charge a live interval
+already settled by the guard. Verify free native disk, the own bounded service,
+shared GPU lease and exact runtime/source/coordinate hashes. Use the saved
+coordinate bytes; a seed alone does not ensure cross-version reproduction.
+
+Run the comparison worker and monitor CPU tests after changes. Refusal fixtures,
+tiny synthetic artifacts and fake cancellation checks do not prove real training
+or operational monitoring success. Before leaving a new run unattended, execute
+the real read-only collector, verify PID/start/service and log progress, and
+verify the existing recurring monitor covers the new status, residual budget,
+guard, checkpoint and evaluation paths. Preserve failure evidence; a forced kill
+or host loss needs accounting reconciliation before any recovery.
+
+Keep all six frozen validation settings and the declared tie rule. Returned
+aggregate consistency is not an independent raw-reference metric audit. The
+worker's completion still requires actual selected-model native parity, verified
+retained-artifact backup, independent comparison reporting and any authorized
+final evaluation. No automatic scratch deletion or test-driven retuning is
+allowed by this workflow.
 
 ## Documentation maintenance and upstream merges
 

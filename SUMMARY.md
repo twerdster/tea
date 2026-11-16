@@ -65,8 +65,9 @@ three training frames and synthetic timestamps; they do not establish tracking
 accuracy, latency or deep Metal/FPGA execution. The selected release is
 `handnet-forest-2026-11-16`; publication is a distinct stage. Training source stays
 27ae728; packaging began from 651a95d and later documentation does not change weights.
-The historical pilot checkpoint above remains unchanged. A proposed 200m/256
-follow-up is unlaunched; comparisons after original test disclosure are explicitly
+The historical pilot checkpoint above remains unchanged. The separate 200m/256
+comparison uses an explicitly authorized additional attempt; its live phase belongs
+in the private run ledgers. Comparisons after original test disclosure are explicitly
 post-exposure exploratory engineering, not untouched confirmation.
 
 `scripts/prepare_forest_release.py` prepares a local publication candidate from a
@@ -102,3 +103,29 @@ This inventory repair does not rewrite training history, change the frozen
 27ae728 training code or alter models.
 Its `handnet-label-semantics-aggregate-v1` schema explicitly records the original
 raw audit schema separately.
+
+## Bounded 200m/256 comparison workflow
+
+`scripts/run_handnet_comparison.py` implements one additional seed204 comparison
+with the original tree0 frame identities, 256 saved coordinate features and an
+expected 200,216,884 balanced pixel samples. It preserves the original three
+trees and their immutable budget. Explicit authorization must reconcile four
+final attempts in total, with no new pilots, at most 16 active training hours
+for the new run and the existing 48-hour aggregate ceiling. A separate residual
+ledger records only new charges; waiting for resources is not training time.
+
+Private runtime configuration supplies machine paths, identity and service
+settings. Published source review and operational monitoring receipts bind the
+exact worker and configuration bytes. Unknown or failed reservations consume
+an attempt and cannot be silently retried. The worker validates the converted
+bank and all checkpoints, evaluates the frozen six-setting validation grid and
+exports the selected prefix. It does not open TestData, publish models or delete
+feature columns. Independent metric audit, selected-model native parity, backup
+and final reporting remain separate stages.
+
+`scripts/collect_handnet_comparison.py` checks the separate job, original plus
+residual plus unsettled live budget, process/service identity, logs, checkpoints,
+finite evaluations and resources. The existing recurring project monitor must
+cover these paths before launch and stay active through evaluation and recovery.
+See `docs/handnet-comparison.md`; source documentation is not evidence of a live
+or completed job.

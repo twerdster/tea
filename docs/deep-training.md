@@ -14,6 +14,10 @@ completed 20-decision trees, frozen validation selection and the full 10,000-fra
 test comparison. It includes selected artifact downloads and numerical native
 CPU parity evidence; the earlier pilot report remains a dated checkpoint.
 
+The separate [bounded 200m/256 comparison](handnet-comparison.md) preserves those
+models and uses explicit additional-attempt authorization, a residual budget and
+its own worker and operational monitor.
+
 ## Depth, diversity and split search
 
 Tea CLI `maxDepth=d` trains levels `0..d` inclusive: use **19 for 20 decisions**.
