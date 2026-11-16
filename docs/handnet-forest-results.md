@@ -111,9 +111,10 @@ histogram votes have not been established as calibrated probabilities.
 
 Official HandNet splits randomize frames. These results do not establish subject
 or session independence, statistical significance or temporal tracking accuracy.
-Any later 200m-sample/256-feature comparison after these test outcomes is a
-post-exposure exploratory engineering comparison; it is not independent untouched
-confirmation and has not been trained here.
+The later [200m-sample/256-feature comparison](handnet-comparison.md) is
+post-exposure exploratory engineering after these test outcomes; it is not
+independent untouched confirmation. This original report and its models remain
+unchanged.
 
 ## Verification and native integration
 

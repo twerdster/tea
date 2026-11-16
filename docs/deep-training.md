@@ -16,7 +16,10 @@ CPU parity evidence; the earlier pilot report remains a dated checkpoint.
 
 The separate [bounded 200m/256 comparison](handnet-comparison.md) preserves those
 models and uses explicit additional-attempt authorization, a residual budget and
-its own worker and operational monitor.
+its own worker and operational monitor. Its independently audited test F1@15mm
+is 0.330230 versus 0.340204 for matched original seed201. The dated comparison,
+optional artifact and numerical native checks remain separate from the original
+forest campaign and do not replace its default model.
 
 ## Depth, diversity and split search
 

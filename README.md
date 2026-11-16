@@ -21,6 +21,11 @@ Both use 20 split decisions, 1,200 int8 features, cutoff 0.25 and minimum compon
 support 3. The report includes denominators, limitations and
 [selected model downloads](https://github.com/twerdster/tea/releases/tag/handnet-forest-2026-11-16).
 
+The later [200m-sample/256-feature comparison](docs/handnet-comparison.md) completed
+one additional tree. Its test F1@15mm was **0.330230**, versus **0.340204** for the
+matched original tree. This exploratory recipe did not improve the matched
+baseline; the original three-tree release remains the default.
+
 ## Current implementation
 
 The source uses C++ standard-library threading, Make and CMake build paths, and Python tools for

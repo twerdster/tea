@@ -150,6 +150,33 @@ retained-artifact backup, independent comparison reporting and any authorized
 final evaluation. No automatic scratch deletion or test-driven retuning is
 allowed by this workflow.
 
+## Completed seed204 comparison reporting
+
+Use `docs/handnet-comparison.md` and its dated aggregate evidence for the completed
+200,216,884-sample/256-feature result. Matched original seed201/tree0 is the primary
+baseline; the original validation-selected single202 and forest are secondary
+references. The new test F1 0.33022975432024754 is lower than matched seed201
+0.3402043017730615. Preserve frozen selection and original defaults; do not promote
+or retune a model from test results. This jointly changed recipe does not isolate
+sample-count effects and remains post-exposure exploratory.
+
+Four frozen full-cohort evaluations and an independent raw-reference audit must
+bind exact model, source, command, output and cohort identities. Distinguish audit
+input configuration from evaluator configuration. Image-feasibility bounds may
+allow documented float64 numerical slack (1e-8 pixels here) while retaining exact
+coordinates and unchanged scoring. Preserve failed audit evidence and source;
+validate a specific repair before a separate audit attempt. This is not another
+training or inference attempt and grants no retry or expanded experiment budget.
+
+The optional seed204 ZIP uses only the reviewed manifest/model/Coords allowlist,
+excluding private verification files and exFAT AppleDouble companions. Verify
+fresh public hashes and actual Linux/Mac selected-model parity separately from
+held-out metric quality. Keep retained checkpoints, models, full evaluations and
+audit/native evidence under verified backups. Monitoring stays active through
+reporting and downstream integration, then may be paused after completion and
+user reporting. Scratch retirement remains a separate decision; no deletion is
+performed by packaging, reporting or monitor completion.
+
 ## Documentation maintenance and upstream merges
 
 Keep the README's requirements and first-run commands concise; use the guides for

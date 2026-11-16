@@ -129,3 +129,39 @@ finite evaluations and resources. The existing recurring project monitor must
 cover these paths before launch and stay active through evaluation and recovery.
 See `docs/handnet-comparison.md`; source documentation is not evidence of a live
 or completed job.
+
+## Completed seed204 comparison — 2026-11-16
+
+The additional tree completed 200,216,884 balanced samples, 256 saved features
+and 20 decisions on the exact ordered 181,979-frame bag of original seed201/tree0.
+The independently audited six-setting grids selected 20 decisions/cutoff 0.25/
+support 3/foreground none for both. The same frozen operating points completed
+all 2,773 validation and 10,000 test frames. Independent raw-reference identity,
+support/count/hit/error/F1 audits passed with stable finite outputs and no
+train/full-validation/test overlap. The new test score is
+0.33022975432024754 versus 0.3402043017730615 for matched seed201, a descriptive
+0.99745 percentage-point decrease. Full-validation scores are
+0.33722832850257944 / 0.3477379234904418. Both primary models predict every absent
+finger occasion (3,232/3,232); detection coverage is not presence accuracy.
+
+`docs/handnet-comparison.md` and
+`docs/evidence/handnet-200m-256-2026-11-16.json` record the completed comparison.
+It is post-exposure exploratory after original test disclosure; samples, features
+and coordinate/pixel seeds changed together. No test-driven retuning or further
+training followed. The original forest remains the default at test F1 0.37494756;
+the original validation-selected single202 and its selection remain unchanged.
+
+The optional `handnet-200m-256-seed204-2026-11-16` artifact has an explicit
+three-file ZIP allowlist, fresh public manifest606237ac and ZIP53b8fc95 hashes.
+Actual selected-model Linux/Mac parity passed on three training depths with both
+foreground policies: exact labels/posteriors/heaps/masks, maximum observation
+difference 4.760636329592671e-13 mm and tracker numeric difference of the same
+magnitude across mixed units. Synthetic 0.1 s cadence establishes no temporal
+accuracy or latency. The raw metric audit reused supplied predictions; image
+feasibility allows 1e-8 pixel numerical slack without clamping or changing scores.
+Original failed audit/source evidence is retained privately.
+
+All 20 depth checkpoints, retained models and complete evaluation outputs have
+separate hash-verified SSD backups; final private handoff binds audit, native,
+package/publication/integration and monitoring evidence. Source remains frozen
+27ae728. Scratch is retained and no new attempt is authorized by these docs.

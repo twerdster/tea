@@ -1,4 +1,12 @@
-# Guarded 200m/256 comparison
+# HandNet 200m/256 comparison
+
+The completed **200m-sample/256-feature seed204 tree** scored **0.330230 mean
+fingertip F1@15mm** on all **10,000 test frames**, versus **0.340204** for the
+matched original seed201 tree. This recipe was **0.997 percentage points lower**.
+The original three-tree forest remains at **0.374948** and stays the default.
+This is **post-exposure exploratory engineering** after disclosure of the original
+test results. The [aggregate JSON](evidence/handnet-200m-256-2026-11-16.json)
+contains full-precision results, denominators and selected hashes.
 
 `scripts/run_handnet_comparison.py` implements one additional seed 204 HandNet
 tree with 200,216,884 sampled pixels, 256 frozen features and at most 20 split
@@ -128,3 +136,140 @@ These tests establish control/contract behavior;
 they do not establish real training, native parity, runtime sufficiency or
 monitor readiness. A test-only `TEA_TEST_SCRIPTS` override can select the frozen
 converter/evaluator directory for the synthetic artifact checks.
+
+## Completed training and validation selection — 2026-11-16
+
+One additional eight-class tree completed **200,216,884 balanced pixel samples**,
+**256 saved features** and **20 split decisions**. Its primary comparator is
+original **seed201/tree0**, using the same ordered bag of **181,979 training
+frames**. The original best single, seed202, and three-tree forest are separate
+secondary references.
+
+| Recipe | New seed204 | Matched original seed201 |
+| --- | ---: | ---: |
+| Training frames | 181,979 | 181,979 |
+| Actual sampled pixels | 200,216,884 | 84,759,330 |
+| Signed-int8 features per sample | 256 | 1,200 |
+| Balanced cap per class per frame | 169 | 64 |
+| Total sample cap per frame | 1,352 | 512 |
+| Frame selector seed | 201 | 201 |
+| Coordinate and pixel seed | 204 | 201 |
+| Split decisions | 20 | 20 |
+
+Both use eight classes including background, probe size 25,000 pixel·mm,
+16 split thresholds, folding depth 12 and the frozen Tea `27ae728`
+implementation. The new feature-column payload is **51,255,522,304 bytes**
+(51.26 GB decimal / 47.74 GiB), before labels and other metadata. This changes
+sample count, feature count and coordinate/pixel seeds together; it does not
+isolate a causal effect of sample count.
+
+The same frozen **300 validation frames** were used for six settings per model:
+12/16/20 decisions crossed with cutoffs 0.25/0.5. Independent raw-reference
+arithmetic auditing covered all **12 configurations**. Both selected **20
+decisions, cutoff 0.25, support 3 and foreground `none`** using the declared tie
+rule. Selection-subset mean fingertip F1@15mm was **0.333550** for seed204 and
+**0.331467** for seed201. These settings and assets were frozen before the new
+full-cohort evaluations; earlier original test outcomes were already disclosed.
+The comparison remains **post-exposure exploratory engineering**.
+
+## Full-cohort results and independent audit
+
+Both frozen models completed all **2,773 validation frames** and **10,000 test
+frames** with unchanged settings. Full validation is descriptive and includes
+the 300 selection frames. All four training bags, full validation and test
+identities were checked; no train/validation/test overlap was found. The four
+training bags contain 202,010 unique training-frame identities in total.
+
+| Cohort | Frames | New seed204 F1@15mm | Matched seed201 F1@15mm |
+| --- | ---: | ---: | ---: |
+| Validation used for selection | 300 | 0.333550 | 0.331467 |
+| Full validation, descriptive | 2,773 | 0.337228 | 0.347738 |
+| Test, frozen settings | 10,000 | **0.330230** | **0.340204** |
+
+The new recipe scores lower on full validation and test, including lower test F1
+for every finger. No model or setting was changed after these results. This
+does not establish a sample-count effect: features and seeds changed too, and
+the comparison was conducted after the original test disclosure. It does not
+establish statistical significance or a best-possible Tea result.
+
+| Test measure | New seed204 | Matched seed201 |
+| --- | ---: | ---: |
+| Mean fingertip recall within 15 mm | 34.15% | 35.18% |
+| Detected/scorable fingertip errors | 46,768 | 46,768 |
+| Mean detected-finger error | 48.04 mm | 44.26 mm |
+| Median detected-finger error | 18.98 mm | 18.60 mm |
+| 90th percentile detected-finger error | 88.98 mm | 79.41 mm |
+| Seven hand-class mean IoU | 23.46% | 23.10% |
+| Learned foreground precision | 64.30% | 64.51% |
+| Learned foreground recall | 94.65% | 95.23% |
+| Learned foreground IoU | 62.04% | 62.49% |
+| Predictions on absent-finger occasions | 3,232 / 3,232 | 3,232 / 3,232 |
+
+Both models predict a centre for all 46,768 scorable present fingers and all
+3,232 absent-finger occasions. Detection coverage therefore does not establish
+reliable presence detection. Error summaries condition on detected/scorable
+fingers; missing predictions, wrong locations and absent-finger false positives
+remain in the F1 denominator. For each of the five fingers:
+
+```text
+F1@15mm = 2 × hits within 15 mm
+          / (scorable presence + scorable-present predictions + absent predictions)
+```
+
+The reported score averages these five values. Ground truth is HandNet's
+adjusted sensor centres `pos[:3, :5]` in camera millimetres; predictions use the
+largest confident 4-connected class component and its probability-weighted
+centroid. Classification uses all positive-depth pixels, with raw label 0
+learned as background. These operational results do not reproduce the historical
+paper's mean-shift detector or metric. Balanced votes are not established as
+calibrated probabilities. Official randomized frames do not establish subject
+or session independence.
+
+For context, the separately published original forest scores **0.374948** and
+its validation-selected seed202 single scores **0.327988** on the same test
+cohort. Their settings, source, metric and exact cohort order were checked for
+reuse. These are secondary references; the matched primary baseline here is
+seed201, and the original validation selection is preserved.
+
+Independent raw-reference audits reconstructed identities, ground-truth supports,
+visibility, counts, localization hits/errors, F1 and classification count
+conservation. All inputs and outputs remained hash-stable and finite. This audit
+uses supplied predictions; it does not independently rerun inference or
+reconstruct predicted components. Image-feasibility checks allow **1e-8 pixel**
+numerical slack for float64 centroid roundoff; original coordinates and scoring
+values are unchanged. Selected-model native inference checks are separate below.
+
+## Selected artifact and native CPU integration
+
+The optional [seed204 release](https://github.com/twerdster/tea/releases/tag/handnet-200m-256-seed204-2026-11-16)
+uses a separate tag. It preserves the original forest release and default
+integration. Its selected manifest declares the exact feature profile,
+coordinates, calibration and postprocessing defaults.
+
+| Artifact | SHA256 |
+| --- | --- |
+| [Seed204 ZIP](https://github.com/twerdster/tea/releases/download/handnet-200m-256-seed204-2026-11-16/tea-handnet-200m-256-seed204.zip) | `53b8fc95c5c8bc3f24c191e5ffda8a80787f64635e45d9e1a16c9dfbdf9006c6` |
+| Public manifest | `606237ac0db02df7ca4f0c04d7bdc6855edece0f7b30927e3495bc473b331a5d` |
+| Native model | `22c5f0763282d8cb816b021cc10f370c0ad398c1aa0e26fe83d4fb34ec67f8df` |
+| Coordinates | `d30587695928cb350c274e6d7d91a472e1b6c27d8ffcfa54c6d76e43a81bf03c` |
+
+Verify [SHA256SUMS.txt](https://github.com/twerdster/tea/releases/download/handnet-200m-256-seed204-2026-11-16/SHA256SUMS.txt)
+before unpacking. The ZIP contains only `forest.json`,
+`assets/tree000/model.tree` and `assets/tree000/Coords.co`.
+It includes HandNet attribution and dataset terms in the manifest; original
+archives, raw frame identities and private runtime records are excluded.
+HandNet is credited to Aaron Wetzler, Ron Slossberg and Ron Kimmel under its
+[dataset release](https://huggingface.co/datasets/twerdster/HandNet) terms.
+Dataset CC BY 4.0 does not relicense historical MATLAB code or assign a blanket
+software/model license.
+
+The actual selected model passed Linux/macOS native/Python checks on the same
+**three training depth frames**, in both `none` and `near-component` modes.
+Labels, posterior bytes, heaps and masks matched exactly. The maximum observation
+difference was **4.760636329592671 × 10⁻¹³ mm**; complete tracker states/history
+agreed with maximum numeric difference **4.760636329592671 × 10⁻¹³** across mixed
+units. Linux/macOS native outputs agreed exactly. Synthetic **0.1 s timestamps**
+check numerical integration, not measured chronology, tracking accuracy or
+latency. Deep Metal/mobile/FPGA execution is not established.
+See the [DepthTrack guide](https://github.com/twerdster/depthtrack/blob/main/docs/tea-forest.md)
+and [parity aggregate](https://github.com/twerdster/depthtrack/blob/main/docs/tea-handnet-seed204-validation.json).
